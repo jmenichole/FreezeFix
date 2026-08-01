@@ -1,0 +1,26 @@
+{
+  "name": "adhd-flow-widget",
+  "version": "1.0.0",
+  "description": "ADHD Productivity Desktop Widget & AI Companion",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win nsis"
+  },
+  "keywords": [
+    "adhd",
+    "productivity",
+    "widget",
+    "ai"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/adhd-widget.git"
+  },
+  "devDependencies": {
+    "electron": "^43.2.0",
+    "electron-builder": "^26.15.3"
+  }
+}

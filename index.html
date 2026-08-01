@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<!--
+  ADHD Flow Widget — Main Application Interface
+  Copyright © 2026 jmenichole (J Chapman). All rights reserved.
+  Author: jmenichole <j.chapman7@yahoo.com>
+  GitHub: https://github.com/jmenichole
+  
+  Unauthorized copying, distribution, or modification of this software is prohibited.
+  This software is proprietary and confidential.
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADHD Flow Widget</title>
+    <meta name="description" content="Your always-visible ADHD productivity widget with smart time-blocking, task breakdown, and AI suggestions.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════
+     BACKGROUND ATMOSPHERE
+══════════════════════════════════════════════════════ -->
+<div id="bg-orbs" aria-hidden="true">
+    <div class="orb orb-purple"></div>
+    <div class="orb orb-teal"></div>
+    <div class="orb orb-pink"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     MAIN APP GRID
+══════════════════════════════════════════════════════ -->
+<div id="app">
+
+    <!-- ────────────────────────────────────────────────
+         LEFT COLUMN (of right half) — Timeline
+    ──────────────────────────────────────────────────── -->
+    <aside id="panel-left" class="panel">
+        <div class="panel-header">
+            <div>
+                <div class="panel-title">Today's Flow</div>
+                <div id="today-label" class="panel-subtitle"></div>
+            </div>
+            <div class="header-actions">
+                <button id="btn-auto-schedule" class="btn btn-ghost btn-xs" title="Auto-schedule all tasks">⚡ Auto</button>
+                <button id="btn-reschedule" class="btn btn-ghost btn-xs" title="Reschedule overdue tasks">🔄</button>
+            </div>
+        </div>
+
+        <div id="timeline-scroll">
+            <div id="timeline"></div>
+        </div>
+
+        <div class="panel-footer">
+            <button id="btn-add-block" class="btn btn-primary btn-block">+ Add Task</button>
+        </div>
+    </aside>
+
+    <!-- ────────────────────────────────────────────────
+         RIGHT COLUMN (of right half) — Command Center & Tasks
+    ──────────────────────────────────────────────────── -->
+    <main id="panel-center" class="panel">
+
+        <!-- Clock -->
+        <div id="clock-section" style="padding:14px var(--p) 10px">
+            <div id="clock" style="font-size:42px">00:00</div>
+            <div id="clock-date"></div>
+            <div id="greeting"></div>
+        </div>
+
+        <!-- Next Task Card -->
+        <div id="next-task-card" class="glow-card" style="margin:10px var(--p);padding:14px">
+            <div class="card-eyebrow">🎯 Up Next</div>
+            <div id="next-task-name" style="font-size:15px">Nothing scheduled — add a task!</div>
+            <div id="next-task-meta"></div>
+            <div id="next-task-actions">
+                <button id="btn-start-focus" class="btn btn-glow btn-sm">▶ Start Focus</button>
+                <button id="btn-mark-done" class="btn btn-ghost btn-sm" style="display:none">✓ Done!</button>
+                <button id="btn-good-enough" class="btn btn-ghost btn-sm" style="display:none">👍 Good Enough</button>
+                <button id="btn-skip-task" class="btn btn-ghost btn-sm" style="display:none">→ Skip</button>
+            </div>
+        </div>
+
+        <!-- Focus Timer -->
+        <div id="timer-section" style="padding:10px var(--p)">
+            <div id="timer-ring-container" style="width:90px;height:90px">
+                <svg id="timer-ring-svg" viewBox="0 0 120 120" style="width:90px;height:90px">
+                    <defs>
+                        <linearGradient id="timer-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                            <stop offset="0%" stop-color="#8b5cf6"/>
+                            <stop offset="50%" stop-color="#06b6d4"/>
+                            <stop offset="100%" stop-color="#10b981"/>
+                        </linearGradient>
+                    </defs>
+                    <circle class="ring-bg" cx="60" cy="60" r="52"/>
+                    <circle id="timer-ring-progress" class="ring-progress" cx="60" cy="60" r="52"/>
+                </svg>
+                <div id="timer-inner">
+                    <div id="timer-display" style="font-size:18px">25:00</div>
+                    <div id="timer-label" style="font-size:9px">Focus</div>
+                </div>
+            </div>
+            <div id="timer-controls">
+                <button id="btn-timer-toggle" class="btn btn-icon btn-timer-play btn-sm" aria-label="Start timer">▶</button>
+                <button id="btn-timer-reset" class="btn btn-icon btn-sm" aria-label="Reset timer">↺</button>
+            </div>
+            <div id="timer-modes" role="group" aria-label="Timer presets">
+                <button class="mode-chip active" data-min="25" data-label="Focus">🎯 25m</button>
+                <button class="mode-chip" data-min="5" data-label="Short Break">☕ 5m</button>
+                <button class="mode-chip" data-min="15" data-label="Long Break">🧘 15m</button>
+                <button class="mode-chip" data-min="90" data-label="Deep Work">🔥 90m</button>
+            </div>
+        </div>
+
+        <!-- Brain Dump -->
+        <div id="brain-dump-section" style="padding:10px var(--p)">
+            <div class="section-label">⚡ Brain Dump</div>
+            <div id="brain-dump-row">
+                <input id="brain-dump-input" type="text" placeholder="Dump a task here, press Enter..." autocomplete="off">
+                <button id="btn-brain-add" class="btn btn-primary btn-sm">Add</button>
+            </div>
+        </div>
+
+        <!-- AI What's Next & Screen Scan -->
+        <div id="whats-next-section" style="padding:10px var(--p)">
+            <div style="display:flex;gap:8px;margin-bottom:6px">
+                <button id="btn-whats-next" class="btn btn-ai btn-sm" style="flex:1">🤖 What next?</button>
+                <button id="btn-scan-screen" class="btn btn-glow btn-sm" style="flex:1" title="AI Vision scan">📸 Scan Screen</button>
+            </div>
+            <div id="ai-response" class="ai-bubble hidden"></div>
+        </div>
+
+        <!-- Task List -->
+        <div id="task-list-section" style="padding:10px var(--p)">
+            <div class="panel-header mini-header" style="padding:0 0 8px">
+                <div class="panel-title">Tasks</div>
+                <div style="display:flex;gap:4px">
+                    <button id="btn-sync-github" class="btn btn-ghost btn-xs" title="Sync GitHub">🐙 GitHub</button>
+                    <div id="task-filters" role="group">
+                        <button class="chip active" data-filter="pending" id="filter-pending">Active</button>
+                        <button class="chip" data-filter="today" id="filter-today">Today</button>
+                        <button class="chip" data-filter="all" id="filter-all">All</button>
+                    </div>
+                </div>
+            </div>
+            <div id="task-list" role="list" style="max-height:150px"></div>
+            <div id="task-list-add-row">
+                <button id="btn-add-task" class="btn btn-ghost btn-block btn-sm">+ Add Task</button>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div id="right-footer" style="margin-bottom:12px">
+            <button id="btn-settings" class="btn btn-ghost btn-xs">⚙️ Settings</button>
+            <button id="btn-history" class="btn btn-ghost btn-xs">📊 History</button>
+            <button id="btn-save-sync" class="btn btn-ghost btn-xs">💾 Save</button>
+            <button id="btn-load-sync" class="btn btn-ghost btn-xs">📂 Load</button>
+        </div>
+
+        <!-- Creator Attribution & Support -->
+        <div style="padding:0 var(--p) 14px;display:flex;align-items:center;justify-content:space-between;font-size:10px;color:var(--t3)">
+            <a href="https://jmenichole.github.io/Portfolio/" target="_blank" style="color:var(--t3);text-decoration:none;display:inline-flex;align-items:center;gap:4px">
+                made4degensbydegens ❤️
+            </a>
+            <a href="https://ko-fi.com/jmenichole7" target="_blank" class="btn btn-ghost btn-xs" style="font-size:10px;padding:2px 7px;border-color:rgba(121,75,196,0.5);color:#a78bfa;background:rgba(121,75,196,0.15)">
+                ☕ Support on Ko-fi
+            </a>
+        </div>
+
+    </main>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     MODALS
+══════════════════════════════════════════════════════ -->
+
+<!-- Add / Edit Task Modal -->
+<div id="modal-task" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="task-modal-title">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 id="task-modal-title">Add Task</h3>
+            <button class="modal-close" data-close="modal-task" aria-label="Close">✕</button>
+        </div>
+        <form id="task-form" novalidate>
+            <div class="form-group">
+                <label for="tf-name">Task Name *</label>
+                <input id="tf-name" type="text" required placeholder="What needs to be done?" autocomplete="off">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="tf-duration">Duration (minutes)</label>
+                    <input id="tf-duration" type="number" min="1" max="480" step="5" placeholder="30">
+                </div>
+                <div class="form-group">
+                    <label for="tf-priority">Priority</label>
+                    <select id="tf-priority">
+                        <option value="1">🔴 Urgent</option>
+                        <option value="2">🟠 High</option>
+                        <option value="3" selected>🟡 Medium</option>
+                        <option value="4">🟢 Low</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="tf-category">Category</label>
+                    <select id="tf-category">
+                        <option value="work">💼 Work</option>
+                        <option value="personal">🏠 Personal</option>
+                        <option value="health">💪 Health</option>
+                        <option value="learning">📚 Learning</option>
+                        <option value="social">👥 Social</option>
+                        <option value="other">📌 Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="tf-deadline">Deadline</label>
+                    <input id="tf-deadline" type="datetime-local">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="tf-scheduled">Schedule for</label>
+                <input id="tf-scheduled" type="datetime-local">
+            </div>
+            <div class="form-group">
+                <label for="tf-notes">Notes</label>
+                <textarea id="tf-notes" rows="2" placeholder="Any context, links, or notes..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="btn-breakdown-from-modal" class="btn btn-ghost">🪄 Break it Down</button>
+                <button type="submit" class="btn btn-primary">Save Task</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Task Breakdown Modal -->
+<div id="modal-breakdown" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="breakdown-heading">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 id="breakdown-heading">🪄 Magic Breakdown</h3>
+            <button class="modal-close" data-close="modal-breakdown" aria-label="Close">✕</button>
+        </div>
+        <div id="breakdown-task-title" class="breakdown-task-title"></div>
+        <div id="breakdown-loading" class="breakdown-loading hidden">
+            <div class="spinner"></div>
+            <span>Breaking it down...</span>
+        </div>
+        <div id="breakdown-steps" class="breakdown-steps-list" role="list"></div>
+        <div class="modal-footer">
+            <button id="btn-breakdown-retry" class="btn btn-ghost">↻ Regenerate</button>
+            <button id="btn-breakdown-add-all" class="btn btn-primary">✓ Add All as Tasks</button>
+        </div>
+    </div>
+</div>
+
+<!-- Settings Modal -->
+<div id="modal-settings" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="settings-heading">
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 id="settings-heading">⚙️ Settings</h3>
+            <button class="modal-close" data-close="modal-settings" aria-label="Close">✕</button>
+        </div>
+
+        <div class="settings-section">
+            <h4>🤖 Free AI & Tracker Integration</h4>
+            <p class="settings-hint">Get a free API key from <strong>aistudio.google.com</strong> or <strong>console.groq.com</strong> for super-fast AI task breakdowns and advice!</p>
+            <div class="form-group">
+                <label for="sf-gemini-key">Gemini API Key (Vision & Breakdown)</label>
+                <div style="display:flex;gap:8px">
+                    <input id="sf-gemini-key" type="password" placeholder="AIza..." style="flex:1">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="sf-groq-key">Groq API Key (Fast Text AI)</label>
+                <div style="display:flex;gap:8px">
+                    <input id="sf-groq-key" type="password" placeholder="gsk_..." style="flex:1">
+                </div>
+            </div>
+            <div style="margin-top:12px;padding:10px;background:var(--glass);border-radius:var(--r);display:flex;align-items:center;justify-content:space-between">
+                <div>
+                    <strong style="font-size:12px">Screen Vision Helper</strong>
+                    <div id="tracker-status" style="font-size:11px;color:var(--t3)">Status: Checking...</div>
+                </div>
+                <button type="button" id="btn-toggle-tracker" class="btn btn-ghost btn-xs">⚡ Check / Start</button>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h4>📅 Google Calendar Sync</h4>
+            <p class="settings-hint">In Google Calendar → Settings → your calendar → "Secret address in iCal format". Paste the URL below for auto-sync, or drag a downloaded .ics file onto the app.</p>
+            <div class="form-group">
+                <label for="sf-gcal-url">Google Calendar iCal URL</label>
+                <div style="display:flex;gap:8px">
+                    <input id="sf-gcal-url" type="url" placeholder="https://calendar.google.com/calendar/ical/..." style="flex:1">
+                    <button type="button" id="btn-fetch-gcal" class="btn btn-ghost btn-sm">Sync Now</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h4>🔌 Integrations</h4>
+            <p class="settings-hint">Connect optional plugins. External integrations only run when you click their buttons.</p>
+            <div id="integration-list" class="integration-list" style="display:grid;gap:10px;margin-top:10px"></div>
+        </div>
+
+        <div class="settings-section">
+            <h4>⏰ Work Schedule</h4>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="sf-work-start">Day Starts</label>
+                    <input id="sf-work-start" type="time" value="09:00">
+                </div>
+                <div class="form-group">
+                    <label for="sf-work-end">Day Ends</label>
+                    <input id="sf-work-end" type="time" value="18:00">
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="sf-break-mins">Break between tasks (minutes)</label>
+                <input id="sf-break-mins" type="number" value="15" min="0" max="60">
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h4>🎨 Layout & Widget Customization</h4>
+            <div class="form-group">
+                <label for="sf-widget-width">Widget Width on Screen</label>
+                <select id="sf-widget-width">
+                    <option value="35vw">Compact Sidebar (35% Right Side)</option>
+                    <option value="45vw" selected>Standard Half (45% Right Side)</option>
+                    <option value="60vw">Wide Split (60% Right Side)</option>
+                    <option value="100vw">Full Screen</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-top:12px">
+                <label>Visible Dashboard Sections</label>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">
+                    <label class="checkbox-group"><input id="sf-sec-clock" type="checkbox" checked> 🕒 Clock & Date</label>
+                    <label class="checkbox-group"><input id="sf-sec-next" type="checkbox" checked> 🎯 Up Next Card</label>
+                    <label class="checkbox-group"><input id="sf-sec-timer" type="checkbox" checked> ⏱ Focus Ring Timer</label>
+                    <label class="checkbox-group"><input id="sf-sec-dump" type="checkbox" checked> ⚡ Brain Dump</label>
+                    <label class="checkbox-group"><input id="sf-sec-ai" type="checkbox" checked> 🤖 AI & Vision Buttons</label>
+                    <label class="checkbox-group"><input id="sf-sec-timeline" type="checkbox" checked> 📅 Daily Timeline</label>
+                    <label class="checkbox-group"><input id="sf-sec-tasks" type="checkbox" checked> 📋 Task List</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-section">
+            <h4>🎨 Experience</h4>
+            <div class="form-group checkbox-group">
+                <label><input id="sf-animations" type="checkbox" checked> Enable celebration animations</label>
+            </div>
+            <div class="form-group checkbox-group">
+                <label><input id="sf-sounds" type="checkbox" checked> Enable sound cues</label>
+            </div>
+        <div class="settings-section">
+            <h4>❤️ Support & Creator Info</h4>
+            <div style="display:flex;align-items:center;justify-content:space-between">
+                <a href="https://jmenichole.github.io/Portfolio/" target="_blank" style="color:var(--t2);text-decoration:none;font-size:12px;font-weight:500">
+                    made4degensbydegens ❤️ (Portfolio)
+                </a>
+                <a href="https://ko-fi.com/jmenichole7" target="_blank" class="btn btn-ghost btn-sm" style="border-color:rgba(121,75,196,0.5);color:#a78bfa;background:rgba(121,75,196,0.15)">
+                    ☕ Support on Ko-fi
+                </a>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button id="btn-clear-data" class="btn btn-ghost" style="color: #f43f5e; border-color: rgba(244,63,94,0.3)">🗑 Clear All Data</button>
+            <button id="btn-save-settings" class="btn btn-primary">Save Settings</button>
+        </div>
+    </div>
+</div>
+
+<!-- History Modal -->
+<div id="modal-history" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="history-heading">
+    <div class="modal-box modal-wide">
+        <div class="modal-header">
+            <h3 id="history-heading">📊 Your History</h3>
+            <button class="modal-close" data-close="modal-history" aria-label="Close">✕</button>
+        </div>
+        <div id="history-content"></div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     OVERLAYS & UTILITIES
+══════════════════════════════════════════════════════ -->
+
+<!-- Celebration overlay -->
+<div id="celebration-overlay" class="hidden" aria-hidden="true" aria-live="polite">
+    <div id="celebration-message"></div>
+    <div id="confetti-container"></div>
+</div>
+
+<!-- Toast notification -->
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+<!-- Hidden file inputs -->
+<input type="file" id="ics-input" accept=".ics" style="display:none" aria-hidden="true" tabindex="-1">
+<input type="file" id="json-load-input" accept=".json" style="display:none" aria-hidden="true" tabindex="-1">
+
+<!-- Scripts — order matters (dependencies first) -->
+<script src="js/tasks.js"></script>
+<script src="js/scheduler.js"></script>
+<script src="js/history.js"></script>
+<script src="js/ics.js"></script>
+<script src="js/breakdown.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/app.js"></script>
+
+<script>
+    function openHeartWidget() {
+        window.open('heart.html', 'ADHDHeart',
+            'width=90,height=90,resizable=no,scrollbars=no,toolbar=no,menubar=no,location=no,status=no');
+    }
+</script>
+
+</body>
+</html>
