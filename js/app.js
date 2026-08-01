@@ -66,6 +66,36 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateClock, 1000);
     setInterval(renderTimelineNowLine, 60000);
 
+    // Enhance settings checkbox visuals: toggle parent label.checked when inputs change
+    document.querySelectorAll('.checkbox-group input[type="checkbox"]').forEach(inp => {
+        const parent = inp.parentElement;
+        if (inp.checked) parent.classList.add('checked');
+        inp.addEventListener('change', () => {
+            if (inp.checked) parent.classList.add('checked'); else parent.classList.remove('checked');
+        });
+    });
+
+    // Estimate task duration heuristics
+    function estimateDuration(taskName) {
+        if (!taskName) return 20;
+        const n = taskName.toLowerCase();
+        const quick = ['email','reply','buy','call','pay','open','file','note','read headline','read'];
+        const medium = ['write','draft','study','research','plan','organize','review','test'];
+        const long = ['code','implement','build','project','design','refactor','debug'];
+        if (quick.some(k => n.includes(k))) return 10;
+        if (medium.some(k => n.includes(k))) return 25;
+        if (long.some(k => n.includes(k))) return 60;
+        return 20;
+    }
+
+    // Open add-task modal prefilled (used by Brain Dump)
+    function openAddTaskModal(prefillName, prefillDuration) {
+        openEditTaskModal(null);
+        document.getElementById('tf-name').value = prefillName || '';
+        document.getElementById('tf-duration').value = prefillDuration || 20;
+        elModalTask.classList.remove('hidden');
+    }
+
     // ── Clock & Greetings ──
     function initClock() {
         updateClock();
@@ -352,10 +382,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleBrainDump() {
         const text = elBrainInput.value.trim();
         if (!text) return;
-        TaskManager.create({ name: text, duration: 20, priority: 3 });
+        const est = estimateDuration(text);
+        // Open add modal so the user can confirm or adjust duration
+        openAddTaskModal(text, est);
         elBrainInput.value = '';
-        showToast('Dumped into tasks! ⚡');
-        renderAll();
+        showToast('Please confirm details for the new task');
     }
     elBtnBrainAdd.onclick = handleBrainDump;
     elBrainInput.onkeydown = (e) => { if (e.key === 'Enter') handleBrainDump(); };
@@ -897,6 +928,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // Apply UI scale (zoom)
+        try {
+            const scale = parseFloat(s.uiScale || '1');
+            if (!isNaN(scale) && scale > 0) {
+                document.body.style.zoom = String(scale);
+            }
+        } catch (e) { /* ignore */ }
+
         // Apply Section Visibility
         const sections = {
             'sf-sec-clock': 'clock-section',
@@ -988,10 +1027,13 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const elWidth = document.getElementById('sf-widget-width');
             if (elWidth && s.widgetWidth) elWidth.value = s.widgetWidth;
+            const elScale = document.getElementById('sf-ui-scale');
+            if (elScale) elScale.value = s.uiScale || '1';
 
             ['sf-sec-clock', 'sf-sec-next', 'sf-sec-timer', 'sf-sec-dump', 'sf-sec-ai', 'sf-sec-timeline', 'sf-sec-tasks'].forEach(id => {
                 const input = document.getElementById(id);
                 if (input) input.checked = s[id] !== false;
+                if (input && input.checked) input.parentElement.classList.add('checked'); else if (input) input.parentElement.classList.remove('checked');
             });
 
             renderIntegrationList();
@@ -1010,6 +1052,7 @@ document.addEventListener('DOMContentLoaded', () => {
             workEnd: document.getElementById('sf-work-end').value,
             breakMins: document.getElementById('sf-break-mins').value,
             widgetWidth: document.getElementById('sf-widget-width').value,
+            uiScale: document.getElementById('sf-ui-scale') ? document.getElementById('sf-ui-scale').value : '1'
         };
 
         ['sf-sec-clock', 'sf-sec-next', 'sf-sec-timer', 'sf-sec-dump', 'sf-sec-ai', 'sf-sec-timeline', 'sf-sec-tasks'].forEach(id => {

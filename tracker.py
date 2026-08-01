@@ -9,7 +9,7 @@ Unauthorized copying, distribution, or modification of this software is prohibit
 This software is proprietary and confidential.
 """
 
-/* tracker.py — Local background activity tracker & screen capture sidecar */
+# tracker.py — Local background activity tracker & screen capture sidecar
 import time
 import json
 import base64

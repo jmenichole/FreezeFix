@@ -19,13 +19,25 @@ let pythonProcess = null;
 
 function startPythonTracker() {
   try {
-    pythonProcess = spawn('python', [path.join(__dirname, 'tracker.py')]);
-    pythonProcess.stdout.on('data', (data) => {
-      console.log(`[Tracker]: ${data}`);
-    });
-    pythonProcess.stderr.on('data', (data) => {
-      console.error(`[Tracker Error]: ${data}`);
-    });
+    const trackerPath = path.join(__dirname, 'tracker.py');
+    // Try common python executables: environment override, then python, then python3
+    const bins = [process.env.PYTHON, 'python', 'python3'].filter(Boolean);
+    let proc = null;
+    for (const bin of bins) {
+      try {
+        proc = spawn(bin, [trackerPath]);
+        proc.stdout.on('data', (data) => { console.log(`[Tracker ${bin}]: ${data}`); });
+        proc.stderr.on('data', (data) => { console.error(`[Tracker ${bin} Error]: ${data}`); });
+        // If spawn succeeded, keep reference and break
+        pythonProcess = proc;
+        console.log('Started tracker with', bin);
+        break;
+      } catch (e) {
+        console.warn('Failed starting tracker with', bin, e);
+        continue;
+      }
+    }
+    if (!pythonProcess) console.warn('Could not start tracker: no python executable found');
   } catch (err) {
     console.error('Failed to auto-start python tracker:', err);
   }

@@ -787,7 +787,17 @@ input,select,textarea { font-family:inherit; font-size:inherit; }
   text-transform:none; letter-spacing:0;
   font-weight:400; cursor:pointer;
 }
-.checkbox-group input[type="checkbox"] { width:15px; height:15px; accent-color:var(--purple); }
+.checkbox-group input[type="checkbox"] { width:18px; height:18px; accent-color:var(--purple); vertical-align:middle; margin-right:8px; }
+
+/* Improve visual checked state and support non-native rendering */
+.checkbox-group input[type="checkbox"] { -webkit-appearance: none; appearance: none; display:inline-block; position:relative; border:2px solid rgba(255,255,255,0.08); background:transparent; border-radius:4px; }
+.checkbox-group input[type="checkbox"]:hover { border-color: var(--glass-b-hov); }
+.checkbox-group input[type="checkbox"]:checked { background: linear-gradient(135deg, var(--purple), var(--purple-l)); border-color: var(--purple); box-shadow: 0 0 6px rgba(124,58,237,0.18); }
+.checkbox-group input[type="checkbox"]:checked::after { content: '✓'; position: absolute; left: 3px; top: -1px; color: white; font-size: 12px; font-weight: 700; }
+
+/* Fallback: also allow label to show checked state (toggled by JS) */
+.checkbox-group.checked { background: rgba(139,92,246,0.06); border-radius:4px; padding:2px 6px; }
+.checkbox-group.checked .label-text { font-weight:600; color:var(--t1); }
 
 .settings-section {
   margin-bottom:22px; padding-bottom:18px;
