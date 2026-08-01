@@ -29,7 +29,29 @@
     "electron-builder": "^26.15.3"
   },
   "build": {
+    "appId": "com.jmenichole.freezefix",
     "productName": "FreezeFix",
+    "files": [
+      "**/*",
+      "!**/.github/**",
+      "!**/.vscode/**",
+      "!**/__pycache__/**",
+      "!**/*.py[cod]",
+      "!**/*.code-workspace",
+      "!**/*.log",
+      "!**/.env*",
+      "!**/*.zip",
+      "!dist/**",
+      "!docs/**"
+    ],
+    "win": {
+      "target": "nsis",
+      "artifactName": "FreezeFix Setup ${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    },
     "publish": [
       {
         "provider": "github",

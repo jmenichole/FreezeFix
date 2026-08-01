@@ -154,6 +154,23 @@ input,select,textarea { font-family:inherit; font-size:inherit; }
 }
 .panel:hover { border-color:var(--glass-b-hov); }
 
+/* Frost styles applied to the app container via JS (sf-frost-style setting) */
+#app.frost-soft .panel {
+  background: linear-gradient(135deg, rgba(255,255,255,0.026), rgba(255,255,255,0.02));
+  backdrop-filter: blur(30px) saturate(140%);
+  -webkit-backdrop-filter: blur(30px) saturate(140%);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+#app.frost-glow .panel {
+  background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.018));
+  backdrop-filter: blur(36px) saturate(150%);
+  -webkit-backdrop-filter: blur(36px) saturate(150%);
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 6px 26px rgba(124,58,237,0.06), 0 2px 8px rgba(6,182,212,0.04);
+}
+#app.frost-none .panel { background: var(--glass); backdrop-filter: none; -webkit-backdrop-filter: none; border:1px solid var(--glass-b); }
+
+
 .panel-header {
   padding:var(--p) var(--p) 12px;
   border-bottom:1px solid var(--glass-b);
@@ -810,6 +827,24 @@ input,select,textarea { font-family:inherit; font-size:inherit; }
   font-size:12px; color:var(--t3); margin-bottom:11px; line-height:1.5;
 }
 .settings-hint strong { color:var(--teal-l); }
+
+.field-info {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:18px;
+  height:18px;
+  margin-left:6px;
+  border-radius:50%;
+  background:rgba(255,255,255,0.08);
+  color:var(--t1);
+  font-size:12px;
+  cursor:help;
+  user-select:none;
+}
+.field-info:hover {
+  background:rgba(255,255,255,0.16);
+}
 
 .integration-list {
   display:grid;

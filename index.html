@@ -45,8 +45,8 @@
                 <div id="today-label" class="panel-subtitle"></div>
             </div>
             <div class="header-actions">
-                <button id="btn-auto-schedule" class="btn btn-ghost btn-xs" title="Auto-schedule all tasks">⚡ Auto</button>
-                <button id="btn-reschedule" class="btn btn-ghost btn-xs" title="Reschedule overdue tasks">🔄</button>
+                <button id="btn-auto-schedule" class="btn btn-ghost btn-xs" title="Auto-schedule all pending tasks into your workday">⚡ Auto</button>
+                <button id="btn-reschedule" class="btn btn-ghost btn-xs" title="Reschedule overdue tasks to the next available slot">🔄</button>
             </div>
         </div>
 
@@ -77,10 +77,11 @@
             <div id="next-task-name" style="font-size:15px">Nothing scheduled — add a task!</div>
             <div id="next-task-meta"></div>
             <div id="next-task-actions">
-                <button id="btn-start-focus" class="btn btn-glow btn-sm">▶ Start Focus</button>
-                <button id="btn-mark-done" class="btn btn-ghost btn-sm" style="display:none">✓ Done!</button>
-                <button id="btn-good-enough" class="btn btn-ghost btn-sm" style="display:none">👍 Good Enough</button>
-                <button id="btn-skip-task" class="btn btn-ghost btn-sm" style="display:none">→ Skip</button>
+                <button id="btn-start-focus" class="btn btn-glow btn-sm" title="Start a focus session for the current task">▶ Start Focus</button>
+                <button id="btn-body-double" class="btn btn-ghost btn-sm" style="display:none" title="Mark this task for body doubling or coworkorking">👥 Body double <span class="field-info" title="Body double tasks are good candidates for coworking, accountability check-ins, or pairing with a buddy to help keep momentum.">ⓘ</span></button>
+                <button id="btn-mark-done" class="btn btn-ghost btn-sm" style="display:none" title="Mark the current task as complete">✓ Done!</button>
+                <button id="btn-good-enough" class="btn btn-ghost btn-sm" style="display:none" title="Finish this task enough to move on">👍 Good Enough</button>
+                <button id="btn-skip-task" class="btn btn-ghost btn-sm" style="display:none" title="Skip to the next task without marking this one done">→ Skip</button>
             </div>
         </div>
 
@@ -127,8 +128,8 @@
         <!-- AI What's Next & Screen Scan -->
         <div id="whats-next-section" style="padding:10px var(--p)">
             <div style="display:flex;gap:8px;margin-bottom:6px">
-                <button id="btn-whats-next" class="btn btn-ai btn-sm" style="flex:1">🤖 What next?</button>
-                <button id="btn-scan-screen" class="btn btn-glow btn-sm" style="flex:1" title="AI Vision scan">📸 Scan Screen</button>
+                <button id="btn-whats-next" class="btn btn-ai btn-sm" style="flex:1" title="Ask the AI helper what task to do next">🤖 What next?</button>
+                <button id="btn-scan-screen" class="btn btn-glow btn-sm" style="flex:1" title="Use the local tracker to capture your screen and analyze it">📸 Scan Screen</button>
             </div>
             <div id="ai-response" class="ai-bubble hidden"></div>
         </div>
@@ -138,27 +139,39 @@
             <div class="panel-header mini-header" style="padding:0 0 8px">
                 <div class="panel-title">Tasks</div>
                 <div style="display:flex;gap:4px">
-                    <button id="btn-sync-github" class="btn btn-ghost btn-xs" title="Sync GitHub">🐙 GitHub</button>
-                    <div id="task-filters" role="group">
-                        <button class="chip active" data-filter="pending" id="filter-pending">Active</button>
-                        <button class="chip" data-filter="today" id="filter-today">Today</button>
-                        <button class="chip" data-filter="all" id="filter-all">All</button>
+                    <button id="btn-help" class="btn btn-ghost btn-xs" title="Help & How to use">❓ Help</button>
+                    <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+                        <div id="task-filters" role="group">
+                            <button class="chip active" data-filter="pending" id="filter-pending">Active</button>
+                            <button class="chip" data-filter="today" id="filter-today">Today</button>
+                            <button class="chip" data-filter="all" id="filter-all">All</button>
+                        </div>
+                        <div id="energy-filters" role="group" style="display:flex;gap:4px;flex-wrap:wrap">
+                            <button class="chip active" data-energy="all" id="energy-all">All energy</button>
+                            <button class="chip" data-energy="high" id="energy-high">High</button>
+                            <button class="chip" data-energy="medium" id="energy-medium">Medium</button>
+                            <button class="chip" data-energy="low" id="energy-low">Low</button>
+                        </div>
                     </div>
                 </div>
             </div>
             <div id="task-list" role="list" style="max-height:150px"></div>
             <div id="task-list-add-row">
-                <button id="btn-add-task" class="btn btn-ghost btn-block btn-sm">+ Add Task</button>
+                <button id="btn-add-task" class="btn btn-ghost btn-block btn-sm" title="Add a new task manually">+ Add Task</button>
             </div>
         </div>
 
         <!-- Footer -->
         <div id="right-footer" style="margin-bottom:12px">
-            <button id="btn-settings" class="btn btn-ghost btn-xs">⚙️ Settings</button>
-            <button id="btn-history" class="btn btn-ghost btn-xs">📊 History</button>
-            <button id="btn-save-sync" class="btn btn-ghost btn-xs">💾 Save</button>
-            <button id="btn-load-sync" class="btn btn-ghost btn-xs">📂 Load</button>
+            <button id="btn-settings" class="btn btn-ghost btn-xs" title="Open settings and layout customization">⚙️ Settings</button>
+            <button id="btn-history" class="btn btn-ghost btn-xs" title="View your recent task history">📊 History</button>
+            <button id="btn-save-sync" class="btn btn-ghost btn-xs" title="Download your tasks as a backup file">💾 Save</button>
+            <button id="btn-load-sync" class="btn btn-ghost btn-xs" title="Load a saved task backup">📂 Load</button>
+            <button id="btn-close-widget" class="btn btn-ghost btn-xs" title="Hide widget to system tray">❌ Hide</button>
         </div>
+
+        <!-- Small show button when widget is hidden (for browser preview fallback) -->
+        <button id="show-widget-toggle" class="btn btn-primary" style="position:fixed;left:10px;bottom:10px;z-index:9999;display:none;padding:8px 12px;border-radius:10px;font-size:13px" title="Restore the widget">Show FreezeFix</button>
 
         <!-- Creator Attribution & Support -->
         <div style="padding:0 var(--p) 14px;display:flex;align-items:center;justify-content:space-between;font-size:10px;color:var(--t3)">
@@ -193,6 +206,7 @@
                 <div class="form-group">
                     <label for="tf-duration">Duration (minutes)</label>
                     <input id="tf-duration" type="number" min="1" max="480" step="5" placeholder="30">
+                    <div id="duration-hint" class="settings-hint">Use your real estimate. If unsure, plan for twice this amount.</div>
                 </div>
                 <div class="form-group">
                     <label for="tf-priority">Priority</label>
@@ -217,6 +231,24 @@
                     </select>
                 </div>
                 <div class="form-group">
+                    <label for="tf-energy">Energy level <span class="field-info" title="Match this task to how much energy you have right now: high, medium, or low.">ⓘ</span></label>
+                    <select id="tf-energy">
+                        <option value="high">⚡ High energy</option>
+                        <option value="medium" selected>🌤 Medium energy</option>
+                        <option value="low">🍃 Low energy</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="tf-decision">Action plan <span class="field-info" title="Choose whether to do, delegate, or delete this task if it isn't worth your attention right now.">ⓘ</span></label>
+                    <select id="tf-decision">
+                        <option value="do">✅ Do</option>
+                        <option value="delegate">🤝 Delegate</option>
+                        <option value="delete">🗑 Delete</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label for="tf-deadline">Deadline</label>
                     <input id="tf-deadline" type="datetime-local">
                 </div>
@@ -230,7 +262,7 @@
                 <textarea id="tf-notes" rows="2" placeholder="Any context, links, or notes..."></textarea>
             </div>
             <div class="modal-footer">
-                <button type="button" id="btn-breakdown-from-modal" class="btn btn-ghost">🪄 Break it Down</button>
+                <button type="button" id="btn-breakdown-from-modal" class="btn btn-ghost" title="Break this task into smaller, easier steps">🪄 Break it Down</button>
                 <button type="submit" class="btn btn-primary">Save Task</button>
             </div>
         </form>
@@ -251,7 +283,7 @@
         </div>
         <div id="breakdown-steps" class="breakdown-steps-list" role="list"></div>
         <div class="modal-footer">
-            <button id="btn-breakdown-retry" class="btn btn-ghost">↻ Regenerate</button>
+            <button id="btn-breakdown-retry" class="btn btn-ghost" title="Try the breakdown again with a fresh take">↻ Regenerate</button>
             <button id="btn-breakdown-add-all" class="btn btn-primary">✓ Add All as Tasks</button>
         </div>
     </div>
@@ -285,7 +317,7 @@
                     <strong style="font-size:12px">Screen Vision Helper</strong>
                     <div id="tracker-status" style="font-size:11px;color:var(--t3)">Status: Checking...</div>
                 </div>
-                <button type="button" id="btn-toggle-tracker" class="btn btn-ghost btn-xs">⚡ Check / Start</button>
+                <button type="button" id="btn-toggle-tracker" class="btn btn-ghost btn-xs" title="Check if the local tracker is running or start it">⚡ Check / Start</button>
             </div>
         </div>
 
@@ -349,6 +381,22 @@
                 <div class="settings-hint">Scale overall UI (helps when the widget feels too big or too small).</div>
             </div>
 
+            <div class="form-group">
+                <label for="sf-widget-opacity">Widget Opacity</label>
+                <input id="sf-widget-opacity" type="range" min="0.5" max="1" step="0.05" value="0.96">
+                <div class="settings-hint">Slight transparency so your background shows through without losing legibility (0.5–1.0).</div>
+            </div>
+
+            <div class="form-group">
+                <label for="sf-frost-style">Backdrop Style</label>
+                <select id="sf-frost-style">
+                    <option value="none">None (solid glass)</option>
+                    <option value="soft" selected>Soft Frost (subtle blur)</option>
+                    <option value="glow">Frost Glow (soft border + glow)</option>
+                </select>
+                <div class="settings-hint">Choose a subtle glass/frost effect that works with background images.</div>
+            </div>
+
             <div class="form-group" style="margin-top:12px">
                 <label>Visible Dashboard Sections</label>
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">
@@ -386,6 +434,25 @@
         <div class="modal-footer">
             <button id="btn-clear-data" class="btn btn-ghost" style="color: #f43f5e; border-color: rgba(244,63,94,0.3)">🗑 Clear All Data</button>
             <button id="btn-save-settings" class="btn btn-primary">Save Settings</button>
+        </div>
+    </div>
+</div>
+
+<!-- Help / How to use Modal -->
+<div id="modal-help" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="help-heading">
+    <div class="modal-box modal-wide">
+        <div class="modal-header">
+            <h3 id="help-heading">❓ How to use FreezeFix</h3>
+            <button class="modal-close" data-close="modal-help" aria-label="Close">✕</button>
+        </div>
+        <div style="padding:10px 14px;line-height:1.5;color:var(--t2);font-size:13px">
+            <p><strong>Body-double</strong>: Mark a task for body-doubling when you want accountability or to pair with someone (a friend, coworker, or coach). It flags the task visually and can be used with external scheduling or reminders.</p>
+            <p><strong>Break it Down</strong>: Use the 🪄 button on any task (or from the Add/Edit task modal) to generate micro-steps. AI will try to create 3–6 tiny steps; if no AI key is configured, the app falls back to local heuristics.</p>
+            <p><strong>Energy & Action Plan</strong>: Set the Energy level to match how you feel now (High / Medium / Low). Use Action Plan to decide whether to Do, Delegate, or Delete a task quickly.</p>
+            <p><strong>Screen Vision & Tracker</strong>: The Screen Vision helper requires the local sidecar script (tracker.py). Open Settings → Screen Vision Helper and press <em>Check / Start</em>, or run <code>python tracker.py</code> from the app folder. Tracker enables screen capture and a local proxy for integrations.</p>
+            <p><strong>GitHub import</strong>: Removed from the UI to simplify the product. If you need GitHub imports later, they can be re-added as an explicit opt-in connector.</p>
+            <hr style="opacity:.06;margin:12px 0">
+            <p style="font-size:12px;color:var(--t3)">Tip: Add quick tasks with Brain Dump, then use <em>Break it Down</em> to turn intimidating tasks into tiny steps you can complete in short bursts.</p>
         </div>
     </div>
 </div>

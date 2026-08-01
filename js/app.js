@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const elNextName      = document.getElementById('next-task-name');
     const elNextMeta      = document.getElementById('next-task-meta');
     const elBtnStartFocus = document.getElementById('btn-start-focus');
+    const elBtnBodyDouble = document.getElementById('btn-body-double');
     const elBtnMarkDone   = document.getElementById('btn-mark-done');
     const elBtnGoodEnough = document.getElementById('btn-good-enough');
     const elBtnSkipTask   = document.getElementById('btn-skip-task');
@@ -51,6 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── State ──
     let activeFilter = 'pending';
+    let activeEnergyFilter = 'all';
     let currentFocusTask = null;
     let timerMins = 25;
     let timerSecsLeft = 25 * 60;
@@ -219,6 +221,10 @@ document.addEventListener('DOMContentLoaded', () => {
         else if (activeFilter === 'today') list = TaskManager.getTodayScheduled();
         else list = TaskManager.getAll();
 
+        if (activeEnergyFilter !== 'all') {
+            list = list.filter(task => task.energy === activeEnergyFilter);
+        }
+
         if (list.length === 0) {
             elTaskList.innerHTML = `
                 <div class="empty-state">
@@ -245,11 +251,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="task-meta">
                         <span class="task-cat cat-${task.category}">${catInfo.icon} ${catInfo.label}</span>
                         <span class="task-pri">${priInfo.icon}</span>
+                        <span class="task-energy">${task.energy === 'high' ? '⚡ High' : task.energy === 'low' ? '🍃 Low' : '🌤 Medium'}</span>
+                        <span class="task-plan ${task.actionPlan}">${task.actionPlan === 'delegate' ? '🤝 Delegate' : task.actionPlan === 'delete' ? '🗑 Delete' : '✅ Do'}</span>
                         <span class="task-dur">⏱ ${task.duration}m</span>
+                        ${task.bodyDouble ? '<span class="task-bodydouble" title="Marked for accountability or coworking support">👥 Body-double</span>' : ''}
                     </div>
                 </div>
                 <div class="task-actions">
                     <button class="icon-btn" title="Magic Breakdown" onclick="event.stopPropagation(); startBreakdown(${task.id})">🪄</button>
+                    <button class="icon-btn" title="Mark for body doubling" onclick="event.stopPropagation(); toggleBodyDouble(${task.id})">👥</button>
                     <button class="icon-btn" title="Edit" onclick="event.stopPropagation(); openEditTaskModalById(${task.id})">✏️</button>
                     <button class="icon-btn" title="Delete" onclick="event.stopPropagation(); deleteTask(${task.id})">🗑</button>
                 </div>
@@ -298,6 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
         elNextMeta.textContent = `${catInfo.icon} ${catInfo.label} • ⏱ ${currentFocusTask.duration} minutes`;
 
         if (elBtnStartFocus) elBtnStartFocus.style.display = "inline-flex";
+        if (elBtnBodyDouble) elBtnBodyDouble.style.display = "inline-flex";
         if (elBtnMarkDone) elBtnMarkDone.style.display = "inline-flex";
         if (elBtnGoodEnough) elBtnGoodEnough.style.display = "inline-flex";
         if (elBtnSkipTask) elBtnSkipTask.style.display = "inline-flex";
@@ -324,6 +335,14 @@ document.addEventListener('DOMContentLoaded', () => {
         renderAll();
     };
 
+    window.toggleBodyDouble = function(id) {
+        const task = TaskManager.getById(id);
+        if (!task) return;
+        TaskManager.update(id, { bodyDouble: !task.bodyDouble });
+        showToast(task.bodyDouble ? 'Body double removed' : 'Marked for body doubling');
+        renderAll();
+    };
+
     window.deleteTask = function(id) {
         TaskManager.remove(id);
         showToast('Task removed');
@@ -345,9 +364,14 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('tf-duration').value = task.duration;
             document.getElementById('tf-priority').value = task.priority;
             document.getElementById('tf-category').value = task.category;
+            document.getElementById('tf-energy').value = task.energy || 'medium';
+            document.getElementById('tf-decision').value = task.actionPlan || 'do';
             document.getElementById('tf-deadline').value = task.deadline || '';
             document.getElementById('tf-scheduled').value = task.scheduledStart || '';
             document.getElementById('tf-notes').value = task.notes || '';
+        } else {
+            document.getElementById('tf-energy').value = 'medium';
+            document.getElementById('tf-decision').value = 'do';
         }
         elModalTask.classList.remove('hidden');
     }
@@ -361,6 +385,8 @@ document.addEventListener('DOMContentLoaded', () => {
             duration: parseInt(document.getElementById('tf-duration').value || 30),
             priority: parseInt(document.getElementById('tf-priority').value || 3),
             category: document.getElementById('tf-category').value,
+            energy: document.getElementById('tf-energy').value || 'medium',
+            actionPlan: document.getElementById('tf-decision').value || 'do',
             deadline: document.getElementById('tf-deadline').value || null,
             scheduledStart: document.getElementById('tf-scheduled').value || null,
             notes: document.getElementById('tf-notes').value,
@@ -421,6 +447,15 @@ document.addEventListener('DOMContentLoaded', () => {
         startTimer();
         showToast(`Focus mode started for "${currentFocusTask.name}" 🎯`);
     };
+
+    if (elBtnBodyDouble) {
+        elBtnBodyDouble.onclick = () => {
+            if (!currentFocusTask) return;
+            TaskManager.update(currentFocusTask.id, { bodyDouble: !currentFocusTask.bodyDouble });
+            showToast(currentFocusTask.bodyDouble ? 'Body double removed for current task' : 'Marked current task for body doubling');
+            renderAll();
+        };
+    }
 
     elBtnMarkDone.onclick = () => {
         if (!currentFocusTask) return;
@@ -501,11 +536,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ── Breakdown Modal & AI ──
-    window.startBreakdown = async function(id) {
-        const task = TaskManager.getById(id);
-        if (!task) return;
-        currentBreakdownTaskName = task.name;
-        document.getElementById('breakdown-task-title').textContent = `Task: ${task.name}`;
+    async function showTaskBreakdown(taskName) {
+        if (!taskName) {
+            showToast('Enter a task name first to break it down.');
+            return;
+        }
+        currentBreakdownTaskName = taskName;
+        document.getElementById('breakdown-task-title').textContent = `Task: ${taskName}`;
         const elList = document.getElementById('breakdown-steps');
         const elLoading = document.getElementById('breakdown-loading');
 
@@ -513,11 +550,52 @@ document.addEventListener('DOMContentLoaded', () => {
         elLoading.classList.remove('hidden');
         elModalBreakdown.classList.remove('hidden');
 
-        currentBreakdownSteps = await AIHelper.generateTaskBreakdown(task.name);
+        currentBreakdownSteps = await AIHelper.generateTaskBreakdown(taskName);
         elLoading.classList.add('hidden');
 
+        if (!currentBreakdownSteps || !currentBreakdownSteps.length) {
+            elList.innerHTML = '<div class="empty-state">No breakdown available yet. Try a simpler task description or add your task first.</div>';
+            return;
+        }
         renderBreakdownSteps();
+    }
+
+    window.startBreakdown = async function(id) {
+        const task = TaskManager.getById(id);
+        if (!task) return;
+        await showTaskBreakdown(task.name);
     };
+
+    const elBtnBreakdownFromModal = document.getElementById('btn-breakdown-from-modal');
+    if (elBtnBreakdownFromModal) {
+        elBtnBreakdownFromModal.onclick = async () => {
+            const editId = elTaskForm.dataset.editId;
+            const taskName = document.getElementById('tf-name').value.trim();
+            if (!taskName) {
+                showToast('Enter a task name first to break it down.');
+                return;
+            }
+            if (editId) {
+                const task = TaskManager.getById(parseInt(editId, 10));
+                if (task) {
+                    await showTaskBreakdown(task.name);
+                    return;
+                }
+            }
+            await showTaskBreakdown(taskName);
+        };
+    }
+
+    const elBtnBreakdownRetry = document.getElementById('btn-breakdown-retry');
+    if (elBtnBreakdownRetry) {
+        elBtnBreakdownRetry.onclick = async () => {
+            if (!currentBreakdownTaskName) {
+                showToast('No task selected for breakdown yet.');
+                return;
+            }
+            await showTaskBreakdown(currentBreakdownTaskName);
+        };
+    }
 
     function renderBreakdownSteps() {
         const elList = document.getElementById('breakdown-steps');
@@ -572,58 +650,8 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    function importTasksFromGitHubEvents(events) {
-        let count = 0;
-        events.forEach(ev => {
-            if (ev.type === 'PushEvent' && ev.payload && ev.payload.commits) {
-                ev.payload.commits.forEach(c => {
-                    TaskManager.create({ name: `GitHub: ${c.message}`, duration: 30, category: 'work', priority: 2 });
-                    count++;
-                });
-            }
-        });
-        if (count > 0) {
-            showToast(`Imported ${count} GitHub commit tasks! 🐙`);
-            renderAll();
-        } else {
-            showToast("No recent public commits found.");
-        }
-    }
-
-    const elBtnSyncGithub = document.getElementById('btn-sync-github');
-    if (elBtnSyncGithub) {
-        elBtnSyncGithub.onclick = async () => {
-            const user = prompt("Enter your GitHub username:");
-            if (!user) return;
-            showToast(`Syncing GitHub activity for @${user}...`);
-
-            try {
-                const resp = await fetch(`https://api.github.com/users/${user}/events/public`);
-                if (resp.ok) {
-                    const events = await resp.json();
-                    if (Array.isArray(events)) {
-                        importTasksFromGitHubEvents(events);
-                        return;
-                    }
-                }
-            } catch (err) {
-                console.warn('Direct GitHub API request failed:', err);
-            }
-
-            try {
-                const resp = await fetch(`http://localhost:8999/github?user=${user}`);
-                const data = await resp.json();
-                if (data.status === 'ok' && Array.isArray(data.events)) {
-                    importTasksFromGitHubEvents(data.events);
-                    return;
-                }
-            } catch (err) {
-                console.warn('Tracker proxy GitHub request failed:', err);
-            }
-
-            showToast("Could not connect to GitHub API or tracker proxy.");
-        };
-    }
+    // GitHub import removed — button and connector were removed by user request.
+    // If desired later, re-add a lightweight public-activity importer that only runs on user action.
 
     // ── Filters & Modals ──
     document.querySelectorAll('#task-filters .chip').forEach(chip => {
@@ -631,6 +659,15 @@ document.addEventListener('DOMContentLoaded', () => {
             document.querySelectorAll('#task-filters .chip').forEach(c => c.classList.remove('active'));
             chip.classList.add('active');
             activeFilter = chip.dataset.filter;
+            renderTaskList();
+        };
+    });
+
+    document.querySelectorAll('#energy-filters .chip').forEach(chip => {
+        chip.onclick = () => {
+            document.querySelectorAll('#energy-filters .chip').forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            activeEnergyFilter = chip.dataset.energy;
             renderTaskList();
         };
     });
@@ -654,6 +691,16 @@ document.addEventListener('DOMContentLoaded', () => {
             toast.classList.remove('show');
             setTimeout(() => toast.classList.add('hidden'), 300);
         }, 3000);
+    }
+
+    // Electron helper: show toast from main process events (tray/global hotkey)
+    try {
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.on('show-toast', (event, message) => {
+            if (message) showToast(message);
+        });
+    } catch (e) {
+        // Not running in Electron
     }
 
     function triggerCelebration(taskName) {
@@ -712,23 +759,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const Connectors = [
-        {
-            id: 'github',
-            name: 'GitHub',
-            description: 'Import GitHub commits as tasks on demand. No background sync unless you press this connector.',
-            getStatus: (settings) => settings.githubUser ? `Connected as @${settings.githubUser}` : 'Disconnected',
-            getActionLabel: (settings) => settings.githubUser ? 'Reconnect' : 'Connect',
-            action: async () => {
-                const settings = loadSettings();
-                const currentUser = settings.githubUser || '';
-                const user = prompt('Enter your GitHub username:', currentUser);
-                if (user === null) return;
-                settings.githubUser = user.trim();
-                saveSettings(settings);
-                renderIntegrationList();
-                showToast(settings.githubUser ? `GitHub connected as @${settings.githubUser}` : 'GitHub disconnected');
-            }
-        },
         {
             id: 'calendar',
             name: 'Google Calendar',
@@ -927,7 +957,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 app.style.width = w;
             }
         }
-
+        
         // Apply UI scale (zoom)
         try {
             const scale = parseFloat(s.uiScale || '1');
@@ -935,7 +965,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.body.style.zoom = String(scale);
             }
         } catch (e) { /* ignore */ }
+        
+        // Apply widget opacity (slight transparency)
+        try {
+            const opacity = parseFloat(s.widgetOpacity || '0.96');
+            if (!isNaN(opacity) && opacity > 0 && app) {
+                app.style.opacity = String(opacity);
+            }
+        } catch (e) { /* ignore */ }
 
+        // Apply frost/glow styles
+        try {
+            const frost = s.frostStyle || 'soft';
+            // remove existing frost classes
+            app.classList.remove('frost-soft','frost-glow','frost-none');
+            if (frost === 'soft') app.classList.add('frost-soft');
+            else if (frost === 'glow') app.classList.add('frost-glow');
+            else app.classList.add('frost-none');
+        } catch (e) { /* ignore */ }
+        
         // Apply Section Visibility
         const sections = {
             'sf-sec-clock': 'clock-section',
@@ -946,7 +994,7 @@ document.addEventListener('DOMContentLoaded', () => {
             'sf-sec-timeline': 'panel-left',
             'sf-sec-tasks': 'task-list-section'
         };
-
+        
         for (let [key, elemId] of Object.entries(sections)) {
             const elem = document.getElementById(elemId);
             if (elem) {
@@ -1021,6 +1069,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (elGemini) elGemini.value = s.geminiKey || '';
             if (elGroq) elGroq.value = s.groqKey || '';
             if (elGcal) elGcal.value = s.gcalUrl || '';
+
             if (elStart) elStart.value = s.workStart || '09:00';
             if (elEnd) elEnd.value = s.workEnd || '18:00';
             if (elBreak) elBreak.value = s.breakMins || '15';
@@ -1029,6 +1078,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (elWidth && s.widgetWidth) elWidth.value = s.widgetWidth;
             const elScale = document.getElementById('sf-ui-scale');
             if (elScale) elScale.value = s.uiScale || '1';
+            const elOpacity = document.getElementById('sf-widget-opacity');
+            if (elOpacity) elOpacity.value = s.widgetOpacity || '0.96';
+            const elFrost = document.getElementById('sf-frost-style');
+            if (elFrost) elFrost.value = s.frostStyle || 'soft';
 
             ['sf-sec-clock', 'sf-sec-next', 'sf-sec-timer', 'sf-sec-dump', 'sf-sec-ai', 'sf-sec-timeline', 'sf-sec-tasks'].forEach(id => {
                 const input = document.getElementById(id);
@@ -1042,6 +1095,14 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
+    // Help button — opens How-to modal
+    const elBtnHelp = document.getElementById('btn-help');
+    if (elBtnHelp) {
+        elBtnHelp.onclick = () => {
+            const modal = document.getElementById('modal-help');
+            if (modal) modal.classList.remove('hidden');
+        };
+    }
     document.getElementById('btn-save-settings').onclick = () => {
         const s = {
             geminiKey: document.getElementById('sf-gemini-key').value.trim(),
@@ -1052,7 +1113,9 @@ document.addEventListener('DOMContentLoaded', () => {
             workEnd: document.getElementById('sf-work-end').value,
             breakMins: document.getElementById('sf-break-mins').value,
             widgetWidth: document.getElementById('sf-widget-width').value,
-            uiScale: document.getElementById('sf-ui-scale') ? document.getElementById('sf-ui-scale').value : '1'
+            uiScale: document.getElementById('sf-ui-scale') ? document.getElementById('sf-ui-scale').value : '1',
+            widgetOpacity: document.getElementById('sf-widget-opacity') ? document.getElementById('sf-widget-opacity').value : '0.96',
+            frostStyle: document.getElementById('sf-frost-style') ? document.getElementById('sf-frost-style').value : 'soft'
         };
 
         ['sf-sec-clock', 'sf-sec-next', 'sf-sec-timer', 'sf-sec-dump', 'sf-sec-ai', 'sf-sec-timeline', 'sf-sec-tasks'].forEach(id => {
@@ -1069,6 +1132,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Apply layout on load
     applyCustomizationSettings();
+
+    // Close / hide widget button (tries IPC in Electron, falls back to hiding DOM for browser preview)
+    const elBtnCloseWidget = document.getElementById('btn-close-widget');
+    const elShowWidgetToggle = document.getElementById('show-widget-toggle');
+    if (elBtnCloseWidget) {
+        elBtnCloseWidget.onclick = () => {
+            // Try Electron IPC first
+            try {
+                const { ipcRenderer } = require('electron');
+                ipcRenderer.send('hide-window');
+                showToast('Hiding widget...');
+                return;
+            } catch (e) {
+                // Not running in Electron; fallback to DOM hide/show
+                const appEl = document.getElementById('app');
+                if (appEl) {
+                    appEl.style.display = 'none';
+                    if (elShowWidgetToggle) elShowWidgetToggle.style.display = 'inline-block';
+                    showToast('Widget hidden (preview mode). Click "Show FreezeFix" to restore.');
+                }
+            }
+        };
+    }
+    if (elShowWidgetToggle) {
+        elShowWidgetToggle.onclick = () => {
+            const appEl = document.getElementById('app');
+            if (appEl) appEl.style.display = '';
+            elShowWidgetToggle.style.display = 'none';
+            showToast('Widget restored');
+        };
+    }
 
     document.getElementById('btn-save-sync').onclick = () => {
         const jsonStr = TaskManager.exportJSON();

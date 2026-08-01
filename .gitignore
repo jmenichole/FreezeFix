@@ -3,6 +3,7 @@ node_modules/
 
 # Build artifacts
 dist/
+release/
 *.exe
 *.blockmap
 *.zip
@@ -11,6 +12,12 @@ dist/
 .vscode/
 .DS_Store
 .env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
 
 # Logs
 npm-debug.log*

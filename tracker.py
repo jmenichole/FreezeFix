@@ -69,7 +69,7 @@ class TrackerHandler(BaseHTTPRequestHandler):
             self.wfile.write(json.dumps({'status': 'ok', 'service': 'ADHD Activity Tracker'}).encode('utf-8'))
 
 def run():
-    print(f"🚀 ADHD Local Activity & Vision Tracker listening on http://localhost:{PORT}")
+    print(f"ADHD Local Activity & Vision Tracker listening on http://localhost:{PORT}")
     httpd = HTTPServer(('localhost', PORT), TrackerHandler)
     try:
         httpd.serve_forever()

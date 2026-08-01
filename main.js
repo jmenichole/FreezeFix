@@ -9,13 +9,83 @@
  */
 
 /* main.js — Electron main process desktop wrapper */
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, Tray, Menu, BrowserWindow, ipcMain, dialog, nativeImage, globalShortcut } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
 const { spawn } = require('child_process');
 
 let mainWindow;
+let tray = null;
 let pythonProcess = null;
+let isAlwaysOnTop = false;
+
+function createTrayIcon() {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+    <rect width="32" height="32" rx="8" fill="#8b5cf6" />
+    <path d="M10 9h12v14H10z" fill="rgba(255,255,255,0.12)" />
+    <path d="M12 13h8v2h-8zM12 17h8v2h-8zM12 21h5v2h-5z" fill="#fff" />
+  </svg>`;
+  const icon = nativeImage.createFromDataURL(`data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`);
+  return icon.resize({ width: 16, height: 16 });
+}
+
+function updateTrayMenu() {
+  if (!tray) return;
+  const template = [
+    {
+      label: mainWindow && mainWindow.isVisible() ? 'Hide FreezeFix' : 'Show FreezeFix',
+      click: () => toggleWindowVisibility()
+    },
+    {
+      label: isAlwaysOnTop ? 'Disable Always on Top' : 'Enable Always on Top',
+      click: () => toggleAlwaysOnTop()
+    },
+    { type: 'separator' },
+    { label: 'Quit FreezeFix', role: 'quit' }
+  ];
+  tray.setContextMenu(Menu.buildFromTemplate(template));
+}
+
+function createTray() {
+  tray = new Tray(createTrayIcon());
+  tray.setToolTip('FreezeFix — Ctrl+Alt+F to toggle visibility');
+  tray.on('click', () => toggleWindowVisibility());
+  tray.on('double-click', () => toggleWindowVisibility());
+  updateTrayMenu();
+}
+
+function toggleWindowVisibility() {
+  if (!mainWindow) return;
+  if (mainWindow.isVisible()) {
+    mainWindow.hide();
+  } else {
+    mainWindow.show();
+    mainWindow.focus();
+  }
+  updateTrayMenu();
+}
+
+function toggleAlwaysOnTop() {
+  if (!mainWindow) return;
+  isAlwaysOnTop = !isAlwaysOnTop;
+  mainWindow.setAlwaysOnTop(isAlwaysOnTop);
+  updateTrayMenu();
+}
+
+function registerGlobalShortcut() {
+  const shortcut = 'Control+Alt+F';
+  if (globalShortcut.isRegistered(shortcut)) return;
+  globalShortcut.register(shortcut, () => {
+    toggleWindowVisibility();
+    if (mainWindow && mainWindow.isVisible()) {
+      mainWindow.webContents.send('show-toast', 'FreezeFix restored (Ctrl+Alt+F)');
+    }
+  });
+}
+
+function unregisterGlobalShortcut() {
+  globalShortcut.unregisterAll();
+}
 
 function startPythonTracker() {
   try {
@@ -76,7 +146,20 @@ function createWindow() {
   });
 }
 
+// IPC handlers for window visibility control (renderer will try these when available)
+ipcMain.on('hide-window', (evt) => {
+  try { if (mainWindow) { mainWindow.hide(); updateTrayMenu(); } } catch (e) { console.error('Failed to hide window:', e); }
+});
+ipcMain.on('show-window', (evt) => {
+  try { if (mainWindow) { mainWindow.show(); mainWindow.focus(); updateTrayMenu(); } } catch (e) { console.error('Failed to show window:', e); }
+});
+
 function setupAutoUpdater() {
+  if (!app.isPackaged) {
+    console.log('Skipping auto-updater in development mode.');
+    return;
+  }
+
   try {
     autoUpdater.autoDownload = true; // download in background
     autoUpdater.on('checking-for-update', () => console.log('Checking for updates...'));
@@ -90,7 +173,6 @@ function setupAutoUpdater() {
     });
     autoUpdater.on('update-downloaded', info => {
       console.log('Update downloaded:', info.version);
-      // Prompt user to restart and install
       const choice = dialog.showMessageBoxSync({
         type: 'info',
         buttons: ['Restart and install', 'Later'],
@@ -105,7 +187,6 @@ function setupAutoUpdater() {
     });
     autoUpdater.on('error', err => console.error('Auto-updater error:', err));
 
-    // Start checking
     autoUpdater.checkForUpdates().catch(err => console.warn('Auto-update check failed:', err));
   } catch (err) {
     console.error('Auto-updater setup failed:', err);
@@ -114,6 +195,8 @@ function setupAutoUpdater() {
 
 app.on('ready', () => {
   createWindow();
+  createTray();
+  registerGlobalShortcut();
   startPythonTracker();
   setupAutoUpdater();
 });
@@ -125,4 +208,6 @@ app.on('window-all-closed', () => {
 
 app.on('will-quit', () => {
   if (pythonProcess) pythonProcess.kill();
+  unregisterGlobalShortcut();
+  if (tray) tray.destroy();
 });
