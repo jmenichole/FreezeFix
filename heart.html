@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<!--
+  ADHD Flow Widget — Heart Monitor Component
+  Copyright © 2026 jmenichole (J Chapman). All rights reserved.
+  Author: jmenichole <j.chapman7@yahoo.com>
+  GitHub: https://github.com/jmenichole
+  
+  Unauthorized copying, distribution, or modification of this software is prohibited.
+  This software is proprietary and confidential.
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADHD Mini Heart</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: rgba(10, 10, 28, 0.85);
+            backdrop-filter: blur(15px);
+            width: 100vw; height: 100vh;
+            display: flex; align-items: center; justify-content: center;
+            overflow: hidden;
+            border-radius: 50%;
+            border: 1px solid rgba(244, 63, 94, 0.4);
+            cursor: pointer;
+            user-select: none;
+        }
+        .heart {
+            font-size: 38px;
+            line-height: 1;
+            animation: pulse 2.2s ease-in-out infinite;
+            filter: drop-shadow(0 0 12px rgba(244, 63, 94, 0.8));
+            transition: transform 0.2s ease;
+        }
+        body:hover .heart {
+            transform: scale(1.25);
+            filter: drop-shadow(0 0 20px rgba(244, 63, 94, 1));
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            14% { transform: scale(1.18); }
+            28% { transform: scale(1); }
+            42% { transform: scale(1.12); }
+            56% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body onclick="focusMainApp()" title="Click to open ADHD Flow Widget">
+    <div class="heart">❤️</div>
+    <script>
+        function focusMainApp() {
+            if (window.opener) {
+                window.opener.focus();
+            } else {
+                window.open('index.html', '_blank');
+            }
+        }
+    </script>
+</body>
+</html>

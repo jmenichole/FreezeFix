@@ -1,0 +1,41 @@
+{
+  "name": "freezefix",
+  "version": "1.0.0",
+  "description": "FreezeFix — Desktop ADHD productivity widget with AI companion",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win nsis"
+  },
+  "keywords": [
+    "adhd",
+    "productivity",
+    "widget",
+    "ai",
+    "freezefix"
+  ],
+  "author": "jmenichole <j.chapman7@yahoo.com>",
+  "license": "UNLICENSED",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jmenichole/FreezeFix.git"
+  },
+  "dependencies": {
+    "electron-updater": "^4.6.5"
+  },
+  "devDependencies": {
+    "electron": "^43.2.0",
+    "electron-builder": "^26.15.3"
+  },
+  "build": {
+    "productName": "FreezeFix",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "jmenichole",
+        "repo": "FreezeFix"
+      }
+    ]
+  }
+}

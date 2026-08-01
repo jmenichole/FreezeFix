@@ -1,0 +1,16 @@
+# Node
+node_modules/
+
+# Build artifacts
+dist/
+*.exe
+*.blockmap
+*.zip
+
+# Editor/OS
+.vscode/
+.DS_Store
+.env
+
+# Logs
+npm-debug.log*

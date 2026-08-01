@@ -1,0 +1,101 @@
+# FreezeFix — Desktop ADHD Productivity Widget
+
+FreezeFix (formerly ADHD Flow Widget) is an always-visible desktop widget that helps users with ADHD get into flow: micro-task breakdowns, auto-scheduling, AI suggestions, streaks, and a lightweight background tracker.
+
+Repository: https://github.com/jmenichole/FreezeFix
+Gumroad product ID: jbbeps
+
+Quick start
+-----------
+- Run in dev: `npm install` then `npm start`
+- Build a Windows installer: `npm run build` (electron-builder produces the NSIS installer in `dist/`)
+
+Release & Auto-updates (recommended)
+------------------------------------
+FreezeFix uses `electron-updater` with GitHub Releases as the update provider.
+
+1. Create the GitHub repo: `jmenichole/FreezeFix` and push code.
+2. Create a PAT (Personal Access Token) with `repo` scope and set `GH_TOKEN` in your environment or CI secrets for publishing.
+3. Tag a release or use electron-builder to publish:
+   - `electron-builder --publish=always`
+
+When a new release is published (attach the installer `.exe`), the app checks GitHub Releases on startup, downloads updates in the background, and prompts users to "Restart and install" when ready.
+
+Packaging for customers (Gumroad)
+---------------------------------
+Ship only the installer `.exe` to customers (do not ship full `dist/` or source files). Recommended customer package:
+
+```
+FreezeFix-v1.0.0/
+├── FreezeFix Setup 1.0.0.exe
+├── README.txt
+└── LICENSE
+```
+
+Enable GitHub Pages for marketing
+--------------------------------
+A simple marketing site is included in `docs/`. To publish it as GitHub Pages:
+1. Push the repo to GitHub.
+2. In repository settings → Pages, select `Branch: main` and `Folder: /docs` (or `gh-pages` branch if you prefer).
+3. The site will be served at `https://<youruser>.github.io/FreezeFix/` (copy the URL from settings).
+
+Security & Licensing
+--------------------
+This project is proprietary. See LICENSE for All Rights Reserved text. Do not redistribute without explicit permission.
+
+Developer notes
+---------------
+- The app spawns a local `tracker.py` process for optional screen-capture features. If you disable screen capture in Settings, the tracker will not be launched automatically.
+- API keys (Gemini/Groq) are stored in localStorage by the UI. Advise users to keep keys private.
+
+Frontend (docs)
+---------------
+The `docs/` site contains a lightweight, responsive landing page. Edit `docs/index.html` to update marketing copy or point the buy button to your Gumroad product URL.
+
+Support & Contact
+-----------------
+Author: jmenichole
+Email: j.chapman7@yahoo.com
+GitHub: https://github.com/jmenichole
+
+
+Your custom, 100% free, offline-ready ADHD productivity widget is ready!
+
+---
+
+## 🌟 Key Features Built For You
+
+1. **🧠 Smart Time-Blocking (FlowSavvy-style)**:
+   - Visual daily timeline automatically schedules tasks.
+   - **Overdue Rescheduling**: Click `🔄` or `⚡ Auto` to shift overdue tasks forward without guilt.
+
+2. **🪄 Magic Breakdown (Goblin.tools-style)**:
+   - Click `🪄` on any intimidating task to explode it into tiny 5-minute micro-steps.
+   - Works 100% offline with local rules, or connects to free Gemini AI if you provide an API key.
+
+3. **📅 Google Calendar Sync**:
+   - Click `📅 Import` in top-right to load any `.ics` file exported from Google Calendar.
+   - Or configure Google Calendar integration in Settings to keep events handy.
+
+4. **🔌 Integrations & Backup**:
+   - New plugin-style connectors let you configure GitHub, Google Calendar, and local backup in Settings.
+   - Tasks, settings, and layout choices are saved locally and persist after install in the packaged app.
+
+5. **❤️ Heart Mini Widget**:
+   - Floating pulsing heart button in the center panel. Click it to pop out a mini floating widget window!
+
+5. **✨ Executive Function Support**:
+   - **"What should I do next?"**: One-click AI / Rule recommendation to eliminate decision paralysis.
+   - **"Good Enough" Button**: Complete tasks partially when perfectionism strikes.
+   - **Dopamine Animations & Streaks**: Celebrate completed work with full confetti particle effects!
+
+---
+
+## 🖥️ How to Use as Desktop Wallpaper (Always Visible Behind Apps)
+
+To place this widget directly on your Windows desktop background (behind all open windows):
+
+1. Download **Lively Wallpaper** (Free & Open Source on [Microsoft Store](https://apps.microsoft.com/detail/9ntm2qc6qws7) or GitHub).
+2. Open Lively Wallpaper → click **+ Add Wallpaper**.
+3. Browse and select your `index.html` file (`adhd-widget/index.html`).
+4. Click **OK** — your widget is now your desktop background!
