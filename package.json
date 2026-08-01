@@ -22,12 +22,15 @@
     "url": "https://github.com/jmenichole/FreezeFix.git"
   },
   "dependencies": {
-    "electron-updater": "^4.6.5"
+    "electron-updater": "^6.8.9"
   },
   "devDependencies": {
     "electron": "^43.2.0",
     "electron-builder": "^26.15.3"
   },
+  "overrides": {
+  "@noble/hashes": "1.3.3"
+},
   "build": {
     "appId": "com.jmenichole.freezefix",
     "productName": "FreezeFix",
