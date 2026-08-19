@@ -11,6 +11,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ADHD Mini Heart</title>
     <style>
@@ -46,16 +47,8 @@
         }
     </style>
 </head>
-<body onclick="focusMainApp()" title="Click to open ADHD Flow Widget">
+<body title="Click to open ADHD Flow Widget">
     <div class="heart">❤️</div>
-    <script>
-        function focusMainApp() {
-            if (window.opener) {
-                window.opener.focus();
-            } else {
-                window.open('index.html', '_blank');
-            }
-        }
-    </script>
+    <script src="js/heart-open.js"></script>
 </body>
 </html>

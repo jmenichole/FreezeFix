@@ -90,6 +90,18 @@ document.addEventListener('DOMContentLoaded', () => {
         return 20;
     }
 
+    // Header used to authenticate requests to the local tracker sidecar.
+    // The token is injected into the renderer's env by main.js (nodeIntegration).
+    function trackerHeaders() {
+        try {
+            const token = (typeof process !== 'undefined' && process.env)
+                ? process.env.FREEZEFIX_TRACKER_TOKEN : '';
+            return token ? { 'X-FreezeFix-Token': token } : {};
+        } catch (e) {
+            return {};
+        }
+    }
+
     // Open add-task modal prefilled (used by Brain Dump)
     function openAddTaskModal(prefillName, prefillDuration) {
         openEditTaskModal(null);
@@ -185,8 +197,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 block.style.height = `${height}px`;
 
                 block.innerHTML = `
-                    <div class="task-block-name">${task.name}</div>
-                    <div class="task-block-dur">${task.duration}m</div>
+                    <div class="task-block-name">${escapeHtml(task.name)}</div>
+                    <div class="task-block-dur">${escapeHtml(task.duration)}m</div>
                 `;
                 block.title = `${task.name} (${s.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} - ${e.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})})`;
                 block.onclick = () => openEditTaskModal(task);
@@ -238,33 +250,33 @@ document.addEventListener('DOMContentLoaded', () => {
             const item = document.createElement('div');
             item.className = `task-item ${task.completed ? 'completed' : ''} ${task.overdue ? 'overdue' : ''}`;
             item.dataset.cat = task.category;
+            item.dataset.id = task.id;
 
             const catInfo = TaskManager.CATEGORIES[task.category] || TaskManager.CATEGORIES.other;
             const priInfo = TaskManager.PRIORITIES[task.priority] || TaskManager.PRIORITIES[3];
 
             item.innerHTML = `
-                <div class="task-check ${task.completed ? 'checked' : ''}" onclick="event.stopPropagation(); toggleComplete(${task.id})">
+                <div class="task-check ${task.completed ? 'checked' : ''}" data-action="toggle">
                     ${task.completed ? '✓' : ''}
                 </div>
                 <div class="task-content">
-                    <div class="task-name">${task.name}</div>
+                    <div class="task-name">${escapeHtml(task.name)}</div>
                     <div class="task-meta">
                         <span class="task-cat cat-${task.category}">${catInfo.icon} ${catInfo.label}</span>
                         <span class="task-pri">${priInfo.icon}</span>
                         <span class="task-energy">${task.energy === 'high' ? '⚡ High' : task.energy === 'low' ? '🍃 Low' : '🌤 Medium'}</span>
                         <span class="task-plan ${task.actionPlan}">${task.actionPlan === 'delegate' ? '🤝 Delegate' : task.actionPlan === 'delete' ? '🗑 Delete' : '✅ Do'}</span>
-                        <span class="task-dur">⏱ ${task.duration}m</span>
+                        <span class="task-dur">⏱ ${escapeHtml(task.duration)}m</span>
                         ${task.bodyDouble ? '<span class="task-bodydouble" title="Marked for accountability or coworking support">👥 Body-double</span>' : ''}
                     </div>
                 </div>
                 <div class="task-actions">
-                    <button class="icon-btn" title="Magic Breakdown" onclick="event.stopPropagation(); startBreakdown(${task.id})">🪄</button>
-                    <button class="icon-btn" title="Mark for body doubling" onclick="event.stopPropagation(); toggleBodyDouble(${task.id})">👥</button>
-                    <button class="icon-btn" title="Edit" onclick="event.stopPropagation(); openEditTaskModalById(${task.id})">✏️</button>
-                    <button class="icon-btn" title="Delete" onclick="event.stopPropagation(); deleteTask(${task.id})">🗑</button>
+                    <button class="icon-btn" title="Magic Breakdown" data-action="breakdown">🪄</button>
+                    <button class="icon-btn" title="Mark for body doubling" data-action="bodydouble">👥</button>
+                    <button class="icon-btn" title="Edit" data-action="edit">✏️</button>
+                    <button class="icon-btn" title="Delete" data-action="delete">🗑</button>
                 </div>
             `;
-            item.onclick = () => openEditTaskModal(task);
             elTaskList.appendChild(item);
         });
     }
@@ -606,8 +618,8 @@ document.addEventListener('DOMContentLoaded', () => {
             item.innerHTML = `
                 <div class="step-num">${idx + 1}</div>
                 <div style="flex:1">
-                    <div class="step-name">${step.name}</div>
-                    <div class="step-duration">⏱ ${step.duration} mins</div>
+                    <div class="step-name">${escapeHtml(step.name)}</div>
+                    <div class="step-duration">⏱ ${escapeHtml(step.duration)} mins</div>
                 </div>
             `;
             elList.appendChild(item);
@@ -627,7 +639,7 @@ document.addEventListener('DOMContentLoaded', () => {
         elAiResponse.classList.remove('hidden');
         elAiResponse.textContent = "Thinking...";
         const advice = await AIHelper.suggestNextTask(TaskManager.getPending(), HistoryManager.getStreak());
-        elAiResponse.innerHTML = advice.replace(/\n/g, '<br>');
+        elAiResponse.innerHTML = escapeHtml(advice).replace(/\n/g, '<br>');
     };
 
     const elBtnScanScreen = document.getElementById('btn-scan-screen');
@@ -636,11 +648,11 @@ document.addEventListener('DOMContentLoaded', () => {
             elAiResponse.classList.remove('hidden');
             elAiResponse.textContent = "📸 Snapping screen & analyzing with Vision AI...";
             try {
-                const resp = await fetch('http://localhost:8999/capture');
+                const resp = await fetch('http://localhost:8999/capture', { headers: trackerHeaders() });
                 const data = await resp.json();
                 if (data.status === 'ok' && data.image) {
                     const analysis = await AIHelper.analyzeScreenImage(data.image);
-                    elAiResponse.innerHTML = `<strong>📸 Screen Analysis:</strong><br>` + analysis.replace(/\n/g, '<br>');
+                    elAiResponse.innerHTML = `<strong>📸 Screen Analysis:</strong><br>` + escapeHtml(analysis).replace(/\n/g, '<br>');
                 } else {
                     elAiResponse.textContent = "⚠️ Tracker script not running. Start tracker.py on your machine to use Screen Vision!";
                 }
@@ -652,6 +664,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // GitHub import removed — button and connector were removed by user request.
     // If desired later, re-add a lightweight public-activity importer that only runs on user action.
+
+    // ── Task list interactions (delegated; CSP-safe, no inline handlers) ──
+    elTaskList.addEventListener('click', (e) => {
+        const itemEl = e.target.closest('.task-item');
+        if (!itemEl) return;
+        const id = parseInt(itemEl.dataset.id, 10);
+        const actionEl = e.target.closest('[data-action]');
+        if (actionEl) {
+            e.stopPropagation();
+            switch (actionEl.dataset.action) {
+                case 'toggle':     window.toggleComplete(id); break;
+                case 'breakdown':  window.startBreakdown(id); break;
+                case 'bodydouble': window.toggleBodyDouble(id); break;
+                case 'edit':       window.openEditTaskModalById(id); break;
+                case 'delete':     window.deleteTask(id); break;
+            }
+            return;
+        }
+        openEditTaskModal(TaskManager.getById(id));
+    });
 
     // ── Filters & Modals ──
     document.querySelectorAll('#task-filters .chip').forEach(chip => {
@@ -887,7 +919,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const elStatus = document.getElementById('tracker-status');
         if (!elStatus) return 'stopped';
         try {
-            const resp = await fetch('http://localhost:8999/');
+            const resp = await fetch('http://localhost:8999/', { headers: trackerHeaders() });
             const data = await resp.json();
             if (data.status === 'ok') {
                 elStatus.innerHTML = '<span style="color:var(--green)">● Running (Ready for Vision AI)</span>';
@@ -1045,8 +1077,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="history-item">
                             <span class="history-icon">✅</span>
                             <div style="flex:1">
-                                <div class="history-name">${h.taskName}</div>
-                                <div class="history-date">${new Date(h.completedAt).toLocaleString()} • ${h.plannedDuration}m</div>
+                                <div class="history-name">${escapeHtml(h.taskName)}</div>
+                                <div class="history-date">${escapeHtml(new Date(h.completedAt).toLocaleString())} • ${escapeHtml(h.plannedDuration)}m</div>
                             </div>
                         </div>
                     `).join('')}
