@@ -61,6 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let isTimerRunning = false;
     let currentBreakdownSteps = [];
     let currentBreakdownTaskName = '';
+    // Tasks the user "skipped" this session so getCurrentTask advances past them.
+    const skippedIds = new Set();
 
     // ── Initialization ──
     initClock();
@@ -139,7 +141,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── Render Controller ──
     function renderAll() {
-        const pending = TaskManager.getPending();
         const allTasks = TaskManager.getAll();
 
         renderTimeline(allTasks);
@@ -177,8 +178,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderTimelineNowLine();
 
-        // Render Scheduled Tasks
-        const scheduled = tasks.filter(t => t.scheduledStart && t.scheduledEnd);
+        // Render Scheduled Tasks — only those scheduled for *today* (this timeline
+        // shows a single day, positioned by time-of-day).
+        const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(dayStart); dayEnd.setDate(dayEnd.getDate() + 1);
+        const scheduled = tasks.filter(t => {
+            if (!t.scheduledStart || !t.scheduledEnd) return false;
+            const s = new Date(t.scheduledStart);
+            return s >= dayStart && s < dayEnd;
+        });
         scheduled.forEach(task => {
             const s = new Date(task.scheduledStart);
             const e = new Date(task.scheduledEnd);
@@ -302,7 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── Next Task Card ──
     function renderNextTaskCard() {
-        const pending = TaskManager.getPending();
+        const pending = TaskManager.getPending().filter(t => !skippedIds.has(t.id));
         currentFocusTask = Scheduler.getCurrentTask(pending);
 
         if (!currentFocusTask) {
@@ -341,6 +349,8 @@ document.addEventListener('DOMContentLoaded', () => {
             TaskManager.complete(id);
             HistoryManager.logCompletion(task);
             triggerCelebration(task.name);
+            // A completed task means real progress — resurface any skipped tasks.
+            skippedIds.clear();
         } else {
             TaskManager.update(id, { completed: false, completedAt: null });
         }
@@ -481,6 +491,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     elBtnSkipTask.onclick = () => {
+        if (currentFocusTask) skippedIds.add(currentFocusTask.id);
         showToast('Skipped to next task →');
         renderAll();
     };
@@ -939,15 +950,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const path = require('path');
             const child = require('child_process');
             const trackerPath = path.join(__dirname, '..', 'tracker.py');
-            const trackerProcess = child.spawn('python', [trackerPath], {
-                stdio: ['ignore', 'pipe', 'pipe'],
-                detached: true
-            });
-
-            trackerProcess.stdout.on('data', data => console.log(`[Tracker]: ${data}`));
-            trackerProcess.stderr.on('data', data => console.error(`[Tracker Error]: ${data}`));
-            trackerProcess.unref();
-            return true;
+            // Try common python executables (mirrors main.js): env override, python, python3.
+            const bins = [(typeof process !== 'undefined' && process.env && process.env.PYTHON), 'python', 'python3'].filter(Boolean);
+            for (const bin of bins) {
+                try {
+                    const trackerProcess = child.spawn(bin, [trackerPath], {
+                        stdio: ['ignore', 'pipe', 'pipe'],
+                        detached: true
+                    });
+                    trackerProcess.stdout.on('data', data => console.log(`[Tracker ${bin}]: ${data}`));
+                    trackerProcess.stderr.on('data', data => console.error(`[Tracker ${bin} Error]: ${data}`));
+                    trackerProcess.unref();
+                    return true;
+                } catch (e) {
+                    console.warn('Failed starting tracker with', bin, e);
+                }
+            }
+            return false;
         } catch (err) {
             console.error('Unable to start tracker.py from renderer:', err);
             return false;
