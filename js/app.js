@@ -809,15 +809,17 @@ document.addEventListener('DOMContentLoaded', () => {
             getStatus: (settings) => settings.gcalUrl ? 'Configured' : 'Not configured',
             getActionLabel: (settings) => settings.gcalUrl ? 'Update' : 'Configure',
             action: async () => {
-                const settings = loadSettings();
-                const url = prompt('Paste your Google Calendar iCal URL:', settings.gcalUrl || '');
-                if (url === null) return;
-                settings.gcalUrl = url.trim();
-                saveSettings(settings);
+                // In-app UX: focus the iCal URL field in Settings (no prompt()).
                 const elGcal = document.getElementById('sf-gcal-url');
-                if (elGcal) elGcal.value = settings.gcalUrl;
-                renderIntegrationList();
-                showToast(settings.gcalUrl ? 'Google Calendar URL saved.' : 'Google Calendar disconnected.');
+                if (elGcal) {
+                    const settings = loadSettings();
+                    elGcal.value = settings.gcalUrl || '';
+                    elGcal.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    elGcal.focus();
+                    showToast('Paste your iCal URL below, then press Save Settings.');
+                } else {
+                    showToast('Open Settings to configure Google Calendar.');
+                }
             }
         },
         {
@@ -825,37 +827,39 @@ document.addEventListener('DOMContentLoaded', () => {
             name: 'Local Backup',
             description: 'Export and restore tasks/settings from a local JSON file. No external service required.',
             getStatus: () => 'Local backup available',
-            getActionLabel: () => 'Backup / Restore',
-            action: async () => {
-                const choice = prompt('Type BACKUP to save a file, or RESTORE to load a backup:', 'BACKUP');
-                if (!choice) return;
-                const mode = choice.trim().toUpperCase();
-                if (mode === 'BACKUP') {
-                    const data = {
-                        version: 1,
-                        exportedAt: new Date().toISOString(),
-                        settings: loadSettings(),
-                        tasks: TaskManager.getAll()
-                    };
-                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `adhd-flow-backup-${new Date().toISOString().slice(0,10)}.json`;
-                    a.click();
-                    showToast('Backup downloaded! 💾');
-                    return;
-                }
-                if (mode === 'RESTORE') {
-                    const fileInput = document.getElementById('json-load-input');
-                    if (fileInput) {
-                        fileInput.click();
-                        showToast('Select a backup file to restore.');
+            // Two explicit buttons instead of a typed BACKUP/RESTORE prompt().
+            actions: [
+                {
+                    id: 'backup',
+                    label: 'Backup',
+                    handler: async () => {
+                        const data = {
+                            version: 1,
+                            exportedAt: new Date().toISOString(),
+                            settings: loadSettings(),
+                            tasks: TaskManager.getAll()
+                        };
+                        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `adhd-flow-backup-${new Date().toISOString().slice(0,10)}.json`;
+                        a.click();
+                        showToast('Backup downloaded! 💾');
                     }
-                    return;
+                },
+                {
+                    id: 'restore',
+                    label: 'Restore',
+                    handler: async () => {
+                        const fileInput = document.getElementById('json-load-input');
+                        if (fileInput) {
+                            fileInput.click();
+                            showToast('Select a backup file to restore.');
+                        }
+                    }
                 }
-                showToast('Canceled. Type BACKUP or RESTORE.');
-            }
+            ]
         },
         {
             id: 'tracker',
@@ -890,22 +894,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
         container.innerHTML = Connectors.map(connector => {
             const status = connector.getStatus(settings);
-            const actionLabel = connector.getActionLabel(settings);
+            const buttons = connector.actions
+                ? connector.actions.map(a =>
+                    `<button type="button" id="integration-btn-${connector.id}-${a.id}" class="btn btn-ghost btn-xs integration-action-btn">${escapeHtml(a.label)}</button>`
+                  ).join('')
+                : `<button type="button" id="integration-btn-${connector.id}" class="btn btn-ghost btn-xs integration-action-btn">${escapeHtml(connector.getActionLabel(settings))}</button>`;
             return `
                 <div class="integration-card" id="integration-card-${connector.id}">
                     <div class="integration-card-header">
                         <div>
-                            <div class="integration-card-title">${connector.name}</div>
-                            <div class="integration-status">${status}</div>
+                            <div class="integration-card-title">${escapeHtml(connector.name)}</div>
+                            <div class="integration-status">${escapeHtml(status)}</div>
                         </div>
-                        <button type="button" id="integration-btn-${connector.id}" class="btn btn-ghost btn-xs integration-action-btn">${actionLabel}</button>
+                        <div class="integration-action-group" style="display:flex;gap:6px">${buttons}</div>
                     </div>
-                    <div class="integration-description">${connector.description}</div>
+                    <div class="integration-description">${escapeHtml(connector.description)}</div>
                 </div>
             `;
         }).join('');
 
         Connectors.forEach(connector => {
+            if (connector.actions) {
+                connector.actions.forEach(a => {
+                    const btn = document.getElementById(`integration-btn-${connector.id}-${a.id}`);
+                    if (!btn) return;
+                    btn.onclick = async () => {
+                        await a.handler();
+                        renderIntegrationList();
+                    };
+                });
+                return;
+            }
             const btn = document.getElementById(`integration-btn-${connector.id}`);
             if (!btn) return;
             btn.onclick = async () => {
