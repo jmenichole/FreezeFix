@@ -42,15 +42,20 @@
       "!**/.env*",
       "!**/*.zip",
       "!dist/**",
-      "!docs/**"
+      "!docs/**",
+      "!build/**"
     ],
     "win": {
       "target": "nsis",
+      "icon": "build/icon.ico",
       "artifactName": "FreezeFix Setup ${version}.${ext}"
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "installerHeaderIcon": "build/icon.ico"
     },
     "publish": [
       {

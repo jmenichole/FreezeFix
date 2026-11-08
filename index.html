@@ -11,6 +11,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://localhost:8999 https://api.groq.com https://generativelanguage.googleapis.com">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ADHD Flow Widget</title>
     <meta name="description" content="Your always-visible ADHD productivity widget with smart time-blocking, task breakdown, and AI suggestions.">
@@ -69,6 +70,30 @@
             <div id="clock" style="font-size:42px">00:00</div>
             <div id="clock-date"></div>
             <div id="greeting"></div>
+        </div>
+
+        <!-- Stats Bar -->
+        <div id="stats-bar" role="group" aria-label="Progress stats">
+            <div class="stat-item">
+                <div class="stat-icon">🔥</div>
+                <div id="streak-num" class="stat-num">0</div>
+                <div class="stat-label">Streak</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-icon">✅</div>
+                <div id="done-today" class="stat-num">0</div>
+                <div class="stat-label">Done Today</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-icon">📋</div>
+                <div id="tasks-left" class="stat-num">0</div>
+                <div class="stat-label">Tasks Left</div>
+            </div>
+        </div>
+
+        <!-- Weekly Activity Grid -->
+        <div id="week-section">
+            <div id="week-grid"></div>
         </div>
 
         <!-- Next Task Card -->
@@ -486,6 +511,7 @@
 <input type="file" id="json-load-input" accept=".json" style="display:none" aria-hidden="true" tabindex="-1">
 
 <!-- Scripts — order matters (dependencies first) -->
+<script src="js/util.js"></script>
 <script src="js/tasks.js"></script>
 <script src="js/scheduler.js"></script>
 <script src="js/history.js"></script>
@@ -493,13 +519,7 @@
 <script src="js/breakdown.js"></script>
 <script src="js/ai.js"></script>
 <script src="js/app.js"></script>
-
-<script>
-    function openHeartWidget() {
-        window.open('heart.html', 'ADHDHeart',
-            'width=90,height=90,resizable=no,scrollbars=no,toolbar=no,menubar=no,location=no,status=no');
-    }
-</script>
+<script src="js/heart-widget.js"></script>
 
 </body>
 </html>

@@ -61,6 +61,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let isTimerRunning = false;
     let currentBreakdownSteps = [];
     let currentBreakdownTaskName = '';
+    // Tasks the user "skipped" this session so getCurrentTask advances past them.
+    const skippedIds = new Set();
 
     // ── Initialization ──
     initClock();
@@ -88,6 +90,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (medium.some(k => n.includes(k))) return 25;
         if (long.some(k => n.includes(k))) return 60;
         return 20;
+    }
+
+    // Header used to authenticate requests to the local tracker sidecar.
+    // The token is injected into the renderer's env by main.js (nodeIntegration).
+    function trackerHeaders() {
+        try {
+            const token = (typeof process !== 'undefined' && process.env)
+                ? process.env.FREEZEFIX_TRACKER_TOKEN : '';
+            return token ? { 'X-FreezeFix-Token': token } : {};
+        } catch (e) {
+            return {};
+        }
     }
 
     // Open add-task modal prefilled (used by Brain Dump)
@@ -127,7 +141,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── Render Controller ──
     function renderAll() {
-        const pending = TaskManager.getPending();
         const allTasks = TaskManager.getAll();
 
         renderTimeline(allTasks);
@@ -165,8 +178,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderTimelineNowLine();
 
-        // Render Scheduled Tasks
-        const scheduled = tasks.filter(t => t.scheduledStart && t.scheduledEnd);
+        // Render Scheduled Tasks — only those scheduled for *today* (this timeline
+        // shows a single day, positioned by time-of-day).
+        const dayStart = new Date(); dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(dayStart); dayEnd.setDate(dayEnd.getDate() + 1);
+        const scheduled = tasks.filter(t => {
+            if (!t.scheduledStart || !t.scheduledEnd) return false;
+            const s = new Date(t.scheduledStart);
+            return s >= dayStart && s < dayEnd;
+        });
         scheduled.forEach(task => {
             const s = new Date(task.scheduledStart);
             const e = new Date(task.scheduledEnd);
@@ -185,8 +205,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 block.style.height = `${height}px`;
 
                 block.innerHTML = `
-                    <div class="task-block-name">${task.name}</div>
-                    <div class="task-block-dur">${task.duration}m</div>
+                    <div class="task-block-name">${escapeHtml(task.name)}</div>
+                    <div class="task-block-dur">${escapeHtml(task.duration)}m</div>
                 `;
                 block.title = `${task.name} (${s.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} - ${e.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})})`;
                 block.onclick = () => openEditTaskModal(task);
@@ -238,33 +258,33 @@ document.addEventListener('DOMContentLoaded', () => {
             const item = document.createElement('div');
             item.className = `task-item ${task.completed ? 'completed' : ''} ${task.overdue ? 'overdue' : ''}`;
             item.dataset.cat = task.category;
+            item.dataset.id = task.id;
 
             const catInfo = TaskManager.CATEGORIES[task.category] || TaskManager.CATEGORIES.other;
             const priInfo = TaskManager.PRIORITIES[task.priority] || TaskManager.PRIORITIES[3];
 
             item.innerHTML = `
-                <div class="task-check ${task.completed ? 'checked' : ''}" onclick="event.stopPropagation(); toggleComplete(${task.id})">
+                <div class="task-check ${task.completed ? 'checked' : ''}" data-action="toggle">
                     ${task.completed ? '✓' : ''}
                 </div>
                 <div class="task-content">
-                    <div class="task-name">${task.name}</div>
+                    <div class="task-name">${escapeHtml(task.name)}</div>
                     <div class="task-meta">
                         <span class="task-cat cat-${task.category}">${catInfo.icon} ${catInfo.label}</span>
                         <span class="task-pri">${priInfo.icon}</span>
                         <span class="task-energy">${task.energy === 'high' ? '⚡ High' : task.energy === 'low' ? '🍃 Low' : '🌤 Medium'}</span>
                         <span class="task-plan ${task.actionPlan}">${task.actionPlan === 'delegate' ? '🤝 Delegate' : task.actionPlan === 'delete' ? '🗑 Delete' : '✅ Do'}</span>
-                        <span class="task-dur">⏱ ${task.duration}m</span>
+                        <span class="task-dur">⏱ ${escapeHtml(task.duration)}m</span>
                         ${task.bodyDouble ? '<span class="task-bodydouble" title="Marked for accountability or coworking support">👥 Body-double</span>' : ''}
                     </div>
                 </div>
                 <div class="task-actions">
-                    <button class="icon-btn" title="Magic Breakdown" onclick="event.stopPropagation(); startBreakdown(${task.id})">🪄</button>
-                    <button class="icon-btn" title="Mark for body doubling" onclick="event.stopPropagation(); toggleBodyDouble(${task.id})">👥</button>
-                    <button class="icon-btn" title="Edit" onclick="event.stopPropagation(); openEditTaskModalById(${task.id})">✏️</button>
-                    <button class="icon-btn" title="Delete" onclick="event.stopPropagation(); deleteTask(${task.id})">🗑</button>
+                    <button class="icon-btn" title="Magic Breakdown" data-action="breakdown">🪄</button>
+                    <button class="icon-btn" title="Mark for body doubling" data-action="bodydouble">👥</button>
+                    <button class="icon-btn" title="Edit" data-action="edit">✏️</button>
+                    <button class="icon-btn" title="Delete" data-action="delete">🗑</button>
                 </div>
             `;
-            item.onclick = () => openEditTaskModal(task);
             elTaskList.appendChild(item);
         });
     }
@@ -290,7 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── Next Task Card ──
     function renderNextTaskCard() {
-        const pending = TaskManager.getPending();
+        const pending = TaskManager.getPending().filter(t => !skippedIds.has(t.id));
         currentFocusTask = Scheduler.getCurrentTask(pending);
 
         if (!currentFocusTask) {
@@ -329,6 +349,8 @@ document.addEventListener('DOMContentLoaded', () => {
             TaskManager.complete(id);
             HistoryManager.logCompletion(task);
             triggerCelebration(task.name);
+            // A completed task means real progress — resurface any skipped tasks.
+            skippedIds.clear();
         } else {
             TaskManager.update(id, { completed: false, completedAt: null });
         }
@@ -469,6 +491,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     elBtnSkipTask.onclick = () => {
+        if (currentFocusTask) skippedIds.add(currentFocusTask.id);
         showToast('Skipped to next task →');
         renderAll();
     };
@@ -606,8 +629,8 @@ document.addEventListener('DOMContentLoaded', () => {
             item.innerHTML = `
                 <div class="step-num">${idx + 1}</div>
                 <div style="flex:1">
-                    <div class="step-name">${step.name}</div>
-                    <div class="step-duration">⏱ ${step.duration} mins</div>
+                    <div class="step-name">${escapeHtml(step.name)}</div>
+                    <div class="step-duration">⏱ ${escapeHtml(step.duration)} mins</div>
                 </div>
             `;
             elList.appendChild(item);
@@ -627,7 +650,7 @@ document.addEventListener('DOMContentLoaded', () => {
         elAiResponse.classList.remove('hidden');
         elAiResponse.textContent = "Thinking...";
         const advice = await AIHelper.suggestNextTask(TaskManager.getPending(), HistoryManager.getStreak());
-        elAiResponse.innerHTML = advice.replace(/\n/g, '<br>');
+        elAiResponse.innerHTML = escapeHtml(advice).replace(/\n/g, '<br>');
     };
 
     const elBtnScanScreen = document.getElementById('btn-scan-screen');
@@ -636,11 +659,11 @@ document.addEventListener('DOMContentLoaded', () => {
             elAiResponse.classList.remove('hidden');
             elAiResponse.textContent = "📸 Snapping screen & analyzing with Vision AI...";
             try {
-                const resp = await fetch('http://localhost:8999/capture');
+                const resp = await fetch('http://localhost:8999/capture', { headers: trackerHeaders() });
                 const data = await resp.json();
                 if (data.status === 'ok' && data.image) {
                     const analysis = await AIHelper.analyzeScreenImage(data.image);
-                    elAiResponse.innerHTML = `<strong>📸 Screen Analysis:</strong><br>` + analysis.replace(/\n/g, '<br>');
+                    elAiResponse.innerHTML = `<strong>📸 Screen Analysis:</strong><br>` + escapeHtml(analysis).replace(/\n/g, '<br>');
                 } else {
                     elAiResponse.textContent = "⚠️ Tracker script not running. Start tracker.py on your machine to use Screen Vision!";
                 }
@@ -652,6 +675,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // GitHub import removed — button and connector were removed by user request.
     // If desired later, re-add a lightweight public-activity importer that only runs on user action.
+
+    // ── Task list interactions (delegated; CSP-safe, no inline handlers) ──
+    elTaskList.addEventListener('click', (e) => {
+        const itemEl = e.target.closest('.task-item');
+        if (!itemEl) return;
+        const id = parseInt(itemEl.dataset.id, 10);
+        const actionEl = e.target.closest('[data-action]');
+        if (actionEl) {
+            e.stopPropagation();
+            switch (actionEl.dataset.action) {
+                case 'toggle':     window.toggleComplete(id); break;
+                case 'breakdown':  window.startBreakdown(id); break;
+                case 'bodydouble': window.toggleBodyDouble(id); break;
+                case 'edit':       window.openEditTaskModalById(id); break;
+                case 'delete':     window.deleteTask(id); break;
+            }
+            return;
+        }
+        openEditTaskModal(TaskManager.getById(id));
+    });
 
     // ── Filters & Modals ──
     document.querySelectorAll('#task-filters .chip').forEach(chip => {
@@ -766,15 +809,17 @@ document.addEventListener('DOMContentLoaded', () => {
             getStatus: (settings) => settings.gcalUrl ? 'Configured' : 'Not configured',
             getActionLabel: (settings) => settings.gcalUrl ? 'Update' : 'Configure',
             action: async () => {
-                const settings = loadSettings();
-                const url = prompt('Paste your Google Calendar iCal URL:', settings.gcalUrl || '');
-                if (url === null) return;
-                settings.gcalUrl = url.trim();
-                saveSettings(settings);
+                // In-app UX: focus the iCal URL field in Settings (no prompt()).
                 const elGcal = document.getElementById('sf-gcal-url');
-                if (elGcal) elGcal.value = settings.gcalUrl;
-                renderIntegrationList();
-                showToast(settings.gcalUrl ? 'Google Calendar URL saved.' : 'Google Calendar disconnected.');
+                if (elGcal) {
+                    const settings = loadSettings();
+                    elGcal.value = settings.gcalUrl || '';
+                    elGcal.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    elGcal.focus();
+                    showToast('Paste your iCal URL below, then press Save Settings.');
+                } else {
+                    showToast('Open Settings to configure Google Calendar.');
+                }
             }
         },
         {
@@ -782,37 +827,39 @@ document.addEventListener('DOMContentLoaded', () => {
             name: 'Local Backup',
             description: 'Export and restore tasks/settings from a local JSON file. No external service required.',
             getStatus: () => 'Local backup available',
-            getActionLabel: () => 'Backup / Restore',
-            action: async () => {
-                const choice = prompt('Type BACKUP to save a file, or RESTORE to load a backup:', 'BACKUP');
-                if (!choice) return;
-                const mode = choice.trim().toUpperCase();
-                if (mode === 'BACKUP') {
-                    const data = {
-                        version: 1,
-                        exportedAt: new Date().toISOString(),
-                        settings: loadSettings(),
-                        tasks: TaskManager.getAll()
-                    };
-                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `adhd-flow-backup-${new Date().toISOString().slice(0,10)}.json`;
-                    a.click();
-                    showToast('Backup downloaded! 💾');
-                    return;
-                }
-                if (mode === 'RESTORE') {
-                    const fileInput = document.getElementById('json-load-input');
-                    if (fileInput) {
-                        fileInput.click();
-                        showToast('Select a backup file to restore.');
+            // Two explicit buttons instead of a typed BACKUP/RESTORE prompt().
+            actions: [
+                {
+                    id: 'backup',
+                    label: 'Backup',
+                    handler: async () => {
+                        const data = {
+                            version: 1,
+                            exportedAt: new Date().toISOString(),
+                            settings: loadSettings(),
+                            tasks: TaskManager.getAll()
+                        };
+                        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = `adhd-flow-backup-${new Date().toISOString().slice(0,10)}.json`;
+                        a.click();
+                        showToast('Backup downloaded! 💾');
                     }
-                    return;
+                },
+                {
+                    id: 'restore',
+                    label: 'Restore',
+                    handler: async () => {
+                        const fileInput = document.getElementById('json-load-input');
+                        if (fileInput) {
+                            fileInput.click();
+                            showToast('Select a backup file to restore.');
+                        }
+                    }
                 }
-                showToast('Canceled. Type BACKUP or RESTORE.');
-            }
+            ]
         },
         {
             id: 'tracker',
@@ -847,22 +894,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
         container.innerHTML = Connectors.map(connector => {
             const status = connector.getStatus(settings);
-            const actionLabel = connector.getActionLabel(settings);
+            const buttons = connector.actions
+                ? connector.actions.map(a =>
+                    `<button type="button" id="integration-btn-${connector.id}-${a.id}" class="btn btn-ghost btn-xs integration-action-btn">${escapeHtml(a.label)}</button>`
+                  ).join('')
+                : `<button type="button" id="integration-btn-${connector.id}" class="btn btn-ghost btn-xs integration-action-btn">${escapeHtml(connector.getActionLabel(settings))}</button>`;
             return `
                 <div class="integration-card" id="integration-card-${connector.id}">
                     <div class="integration-card-header">
                         <div>
-                            <div class="integration-card-title">${connector.name}</div>
-                            <div class="integration-status">${status}</div>
+                            <div class="integration-card-title">${escapeHtml(connector.name)}</div>
+                            <div class="integration-status">${escapeHtml(status)}</div>
                         </div>
-                        <button type="button" id="integration-btn-${connector.id}" class="btn btn-ghost btn-xs integration-action-btn">${actionLabel}</button>
+                        <div class="integration-action-group" style="display:flex;gap:6px">${buttons}</div>
                     </div>
-                    <div class="integration-description">${connector.description}</div>
+                    <div class="integration-description">${escapeHtml(connector.description)}</div>
                 </div>
             `;
         }).join('');
 
         Connectors.forEach(connector => {
+            if (connector.actions) {
+                connector.actions.forEach(a => {
+                    const btn = document.getElementById(`integration-btn-${connector.id}-${a.id}`);
+                    if (!btn) return;
+                    btn.onclick = async () => {
+                        await a.handler();
+                        renderIntegrationList();
+                    };
+                });
+                return;
+            }
             const btn = document.getElementById(`integration-btn-${connector.id}`);
             if (!btn) return;
             btn.onclick = async () => {
@@ -887,7 +949,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const elStatus = document.getElementById('tracker-status');
         if (!elStatus) return 'stopped';
         try {
-            const resp = await fetch('http://localhost:8999/');
+            const resp = await fetch('http://localhost:8999/', { headers: trackerHeaders() });
             const data = await resp.json();
             if (data.status === 'ok') {
                 elStatus.innerHTML = '<span style="color:var(--green)">● Running (Ready for Vision AI)</span>';
@@ -907,15 +969,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const path = require('path');
             const child = require('child_process');
             const trackerPath = path.join(__dirname, '..', 'tracker.py');
-            const trackerProcess = child.spawn('python', [trackerPath], {
-                stdio: ['ignore', 'pipe', 'pipe'],
-                detached: true
-            });
-
-            trackerProcess.stdout.on('data', data => console.log(`[Tracker]: ${data}`));
-            trackerProcess.stderr.on('data', data => console.error(`[Tracker Error]: ${data}`));
-            trackerProcess.unref();
-            return true;
+            // Try common python executables (mirrors main.js): env override, python, python3.
+            const bins = [(typeof process !== 'undefined' && process.env && process.env.PYTHON), 'python', 'python3'].filter(Boolean);
+            for (const bin of bins) {
+                try {
+                    const trackerProcess = child.spawn(bin, [trackerPath], {
+                        stdio: ['ignore', 'pipe', 'pipe'],
+                        detached: true
+                    });
+                    trackerProcess.stdout.on('data', data => console.log(`[Tracker ${bin}]: ${data}`));
+                    trackerProcess.stderr.on('data', data => console.error(`[Tracker ${bin} Error]: ${data}`));
+                    trackerProcess.unref();
+                    return true;
+                } catch (e) {
+                    console.warn('Failed starting tracker with', bin, e);
+                }
+            }
+            return false;
         } catch (err) {
             console.error('Unable to start tracker.py from renderer:', err);
             return false;
@@ -1045,8 +1115,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="history-item">
                             <span class="history-icon">✅</span>
                             <div style="flex:1">
-                                <div class="history-name">${h.taskName}</div>
-                                <div class="history-date">${new Date(h.completedAt).toLocaleString()} • ${h.plannedDuration}m</div>
+                                <div class="history-name">${escapeHtml(h.taskName)}</div>
+                                <div class="history-date">${escapeHtml(new Date(h.completedAt).toLocaleString())} • ${escapeHtml(h.plannedDuration)}m</div>
                             </div>
                         </div>
                     `).join('')}

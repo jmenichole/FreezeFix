@@ -12,12 +12,19 @@
 const { app, Tray, Menu, BrowserWindow, ipcMain, dialog, nativeImage, globalShortcut } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const path = require('path');
+const crypto = require('crypto');
 const { spawn } = require('child_process');
 
 let mainWindow;
 let tray = null;
 let pythonProcess = null;
 let isAlwaysOnTop = false;
+
+// Shared secret so only this app (not arbitrary websites) can reach the local
+// tracker sidecar. Generated once and exposed to the renderer via process.env
+// (inherited by the renderer under nodeIntegration) and to tracker.py via its env.
+const TRACKER_TOKEN = crypto.randomBytes(24).toString('hex');
+process.env.FREEZEFIX_TRACKER_TOKEN = TRACKER_TOKEN;
 
 function createTrayIcon() {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
@@ -93,9 +100,10 @@ function startPythonTracker() {
     // Try common python executables: environment override, then python, then python3
     const bins = [process.env.PYTHON, 'python', 'python3'].filter(Boolean);
     let proc = null;
+    const trackerEnv = Object.assign({}, process.env, { FREEZEFIX_TRACKER_TOKEN: TRACKER_TOKEN });
     for (const bin of bins) {
       try {
-        proc = spawn(bin, [trackerPath]);
+        proc = spawn(bin, [trackerPath], { env: trackerEnv });
         proc.stdout.on('data', (data) => { console.log(`[Tracker ${bin}]: ${data}`); });
         proc.stderr.on('data', (data) => { console.error(`[Tracker ${bin} Error]: ${data}`); });
         // If spawn succeeded, keep reference and break
