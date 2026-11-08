@@ -76,14 +76,24 @@ const AIHelper = (() => {
     }
 
     async function generateTaskBreakdown(taskName) {
-        const prompt = `You are an ADHD executive dysfunction assistant. Take this task: "${taskName}" and break it down into 3-6 tiny, non-intimidating micro-steps. Return ONLY a valid JSON array of objects with keys "name" (string) and "duration" (number in minutes). Example: [{"name": "Step 1", "duration": 5}]`;
+        const prompt = `You are an empathetic, practical ADHD executive dysfunction coach (similar to Goblin.tools Magic ToDo).
+Take this real-world task: "${taskName}".
+Break it down into 3-5 concrete, physical, low-friction micro-steps that an overwhelmed person can actually do right now.
+RULES:
+1. Use real physical verbs (e.g. "Grab cat treats", "Step to the door", "Open the dishwasher").
+2. NEVER use generic or corporate phrases like "Prepare materials", "Execute first action", "Continue core work", or "Review and finalize".
+3. Keep durations short (1-10 minutes per step).
+4. Return ONLY a valid JSON array of objects with keys "name" (string) and "duration" (number of minutes).
+Example: [{"name": "Grab a favorite treat bag to shake", "duration": 2}]`;
 
         try {
             const text = await callAI(prompt);
-            const cleanText = text.replace(/```json|```/g, '').trim();
-            const steps = JSON.parse(cleanText);
-            if (Array.isArray(steps) && steps.length > 0) {
-                return steps;
+            const match = text.match(/\[\s*\{[\s\S]*\}\s*\]/);
+            if (match) {
+                const steps = JSON.parse(match[0]);
+                if (Array.isArray(steps) && steps.length > 0) {
+                    return steps;
+                }
             }
         } catch (err) {
             console.warn('AI breakdown failed, fallback to local heuristics', err);

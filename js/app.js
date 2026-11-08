@@ -597,7 +597,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         currentBreakdownTaskName = taskName;
-        document.getElementById('breakdown-task-title').textContent = `Task: ${taskName}`;
+        const titleEl = document.getElementById('breakdown-task-title');
+        const { gemini, groq } = AIHelper.getKeys();
+        const hasAI = Boolean(gemini || groq);
+        const badgeHtml = `<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px;margin-left:8px;${hasAI ? 'background:rgba(139,92,246,0.22);color:#c4b5fd' : 'background:rgba(6,182,212,0.18);color:#67e8f9'}">${hasAI ? '✨ AI Breakdown' : '⚡ Smart Heuristic'}</span>`;
+        titleEl.innerHTML = `<strong>Task:</strong> ${escapeHtml(taskName)} ${badgeHtml}`;
+
         const elList = document.getElementById('breakdown-steps');
         const elLoading = document.getElementById('breakdown-loading');
 
@@ -665,15 +670,52 @@ document.addEventListener('DOMContentLoaded', () => {
         currentBreakdownSteps.forEach((step, idx) => {
             const item = document.createElement('div');
             item.className = 'breakdown-step';
+            item.style.display = 'flex';
+            item.style.alignItems = 'center';
+            item.style.gap = '8px';
             item.innerHTML = `
                 <div class="step-num">${idx + 1}</div>
-                <div style="flex:1">
-                    <div class="step-name">${escapeHtml(step.name)}</div>
-                    <div class="step-duration">⏱ ${escapeHtml(step.duration)} mins</div>
+                <div style="flex:1;min-width:0">
+                    <input class="step-name-edit" data-idx="${idx}" value="${escapeHtml(step.name)}" style="width:100%;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.08);color:var(--t1);font-size:13px;padding:2px 0;outline:none" title="Click to edit step description">
+                    <div class="step-duration" style="display:flex;align-items:center;gap:4px;margin-top:3px">
+                        <span>⏱</span>
+                        <input class="step-dur-edit" data-idx="${idx}" type="number" min="1" max="120" value="${escapeHtml(step.duration)}" style="width:44px;background:rgba(255,255,255,0.06);border:1px solid var(--glass-b);border-radius:4px;color:var(--t2);font-size:11px;padding:1px 4px;text-align:center" title="Step duration in minutes">
+                        <span>mins</span>
+                    </div>
                 </div>
+                <button type="button" class="btn-step-delete" data-idx="${idx}" title="Remove this step" style="background:transparent;border:none;color:var(--t4);cursor:pointer;font-size:14px;padding:4px 6px">✕</button>
             `;
             elList.appendChild(item);
         });
+
+        // Edit handlers
+        elList.querySelectorAll('.step-name-edit').forEach(inp => {
+            inp.oninput = (e) => {
+                const i = parseInt(e.target.dataset.idx, 10);
+                if (currentBreakdownSteps[i]) currentBreakdownSteps[i].name = e.target.value;
+            };
+        });
+        elList.querySelectorAll('.step-dur-edit').forEach(inp => {
+            inp.onchange = (e) => {
+                const i = parseInt(e.target.dataset.idx, 10);
+                if (currentBreakdownSteps[i]) currentBreakdownSteps[i].duration = parseInt(e.target.value, 10) || 5;
+            };
+        });
+        elList.querySelectorAll('.btn-step-delete').forEach(btn => {
+            btn.onclick = (e) => {
+                const i = parseInt(e.target.dataset.idx, 10);
+                currentBreakdownSteps.splice(i, 1);
+                renderBreakdownSteps();
+            };
+        });
+    }
+
+    const elBtnAddBreakdownStep = document.getElementById('btn-breakdown-add-step');
+    if (elBtnAddBreakdownStep) {
+        elBtnAddBreakdownStep.onclick = () => {
+            currentBreakdownSteps.push({ name: 'Next small action step', duration: 5 });
+            renderBreakdownSteps();
+        };
     }
 
     document.getElementById('btn-breakdown-add-all').onclick = () => {
