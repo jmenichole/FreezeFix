@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.3] — 2026-11-08
+
+### Fixed
+- **Internal Browser Page Detection & Infinite Permission Loop**: Prevented confusing permission reload messages when clicking "Scan Webpage" while on `chrome://extensions`, `chrome://newtab`, or Chrome Web Store. Chrome security forbids extensions from capturing internal browser pages; FreezeFix now clearly detects internal tabs upfront and gives concrete instructions to switch to a regular web tab.
+- **Permission Verification**: Added `chrome.permissions.contains({ origins: ['<all_urls>'] })` verification to only show the extension reload notification if host permissions are genuinely missing in Chrome.
+
+### Changed
+- **Direct Side Panel Screen Capture**: Added synchronous direct tab capture from the side panel with background worker fallback, preserving direct user click gestures.
+- **Vision AI Markdown-to-Action Parser**: Enhanced `renderVisionResult` with an intelligent natural-text and markdown parser that automatically converts raw bullet lists into high-contrast interactive cards with 1-click `⚡ Do This` buttons.
+- **Vision Notice & Loading Cards**: Added accessible, styled notice cards (`.vision-notice-card`) with clear visual hierarchy, badges, and ADHD-friendly action hints.
+
 ## [1.1.2] — 2026-11-08
 
 ### Added

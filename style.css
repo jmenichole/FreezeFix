@@ -1846,3 +1846,97 @@ body.font-legible * {
 .vision-raw-text li {
   margin-bottom: 6px;
 }
+
+/* 🔒 Vision Notice & Guidance Cards */
+.vision-notice-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-b);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: fadeIn 0.2s ease;
+}
+:root[data-theme="light"] .vision-notice-card {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+.vision-notice-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.vision-notice-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  padding: 2px 7px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+.vision-notice-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--t1);
+  line-height: 1.35;
+}
+.vision-notice-title code {
+  color: var(--purple-l);
+  font-size: 12px;
+}
+.vision-notice-text {
+  font-size: 12px;
+  color: var(--t2);
+  line-height: 1.45;
+  margin: 0;
+}
+.vision-notice-text code {
+  background: rgba(255, 255, 255, 0.08);
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+.vision-notice-action {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: rgba(139, 92, 246, 0.1);
+  border-left: 3px solid var(--purple);
+  padding: 8px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--t1);
+  line-height: 1.4;
+  margin-top: 4px;
+}
+:root[data-theme="light"] .vision-notice-action {
+  background: rgba(139, 92, 246, 0.08);
+}
+.vision-notice-arrow {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.vision-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--t1);
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px dashed rgba(139, 92, 246, 0.35);
+  border-radius: 12px;
+}
+.vision-loading-spinner {
+  font-size: 18px;
+  animation: pulseIcon 1.5s infinite ease-in-out;
+}
+@keyframes pulseIcon {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.2); opacity: 1; }
+}

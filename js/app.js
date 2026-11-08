@@ -778,8 +778,73 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    function extractActionsFromText(text) {
+        if (!text || typeof text !== 'string') return null;
+        const lines = text.split('\n');
+        const actions = [];
+        let contextParts = [];
+
+        for (let rawLine of lines) {
+            const line = rawLine.trim();
+            if (!line) continue;
+
+            // Check if bullet point or numbered item: *, -, •, or 1., 2., etc.
+            if (/^[\*\-\•\d+\.]\s+/.test(line)) {
+                const cleanLine = line.replace(/^[\*\-\•\d+\.]+\s*/, '').trim();
+
+                let title = '';
+                let detail = '';
+
+                // Try **Title:** Detail or **Title** - Detail
+                const boldMatch = cleanLine.match(/^\*\*(.+?)\*\*[:\s–—\-]*(.*)$/);
+                if (boldMatch) {
+                    title = boldMatch[1].trim();
+                    detail = boldMatch[2].trim();
+                } else {
+                    const colonIdx = cleanLine.indexOf(':');
+                    if (colonIdx > 2 && colonIdx < 60) {
+                        title = cleanLine.substring(0, colonIdx).replace(/\*\*/g, '').trim();
+                        detail = cleanLine.substring(colonIdx + 1).replace(/\*\*/g, '').trim();
+                    } else {
+                        title = cleanLine.replace(/\*\*/g, '').trim();
+                    }
+                }
+
+                if (title && title.length > 2) {
+                    actions.push({
+                        title: title,
+                        detail: detail,
+                        duration: 5
+                    });
+                    continue;
+                }
+            }
+
+            // Non-bullet line: accumulate into context overview
+            if (actions.length === 0 && !line.toLowerCase().includes('here are a few') && !line.toLowerCase().includes('quick, low-friction') && !line.startsWith('#')) {
+                contextParts.push(line.replace(/\*\*/g, ''));
+            }
+        }
+
+        if (actions.length > 0) {
+            return {
+                context: contextParts.join(' ').trim() || 'Active webpage context:',
+                actions: actions
+            };
+        }
+        return null;
+    }
+
     function renderVisionResult(result) {
         if (!elAiResponse) return;
+
+        // If string or markdown, try converting to structured actions first
+        if (typeof result === 'string') {
+            const parsed = extractActionsFromText(result);
+            if (parsed && parsed.actions && parsed.actions.length > 0) {
+                result = parsed;
+            }
+        }
 
         // If result is structured object with actions
         if (result && typeof result === 'object' && Array.isArray(result.actions)) {
@@ -876,47 +941,236 @@ document.addEventListener('DOMContentLoaded', () => {
     if (elBtnScanScreen) {
         elBtnScanScreen.onclick = async () => {
             elAiResponse.classList.remove('hidden');
-            elAiResponse.textContent = "📸 Snapping screen & analyzing with Vision AI...";
+            elAiResponse.innerHTML = `
+                <div class="vision-loading">
+                    <span class="vision-loading-spinner">📸</span>
+                    <span>Capturing active tab & analyzing with Vision AI...</span>
+                </div>
+            `;
 
             // Chrome Extension native tab capture (zero-install, zero-python)
-            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id && chrome.runtime.sendMessage) {
-                chrome.runtime.sendMessage({ action: 'capture_active_tab' }, async (response) => {
-                    if (chrome.runtime && chrome.runtime.lastError) {
-                        elAiResponse.textContent = "⚠️ Tab capture note: " + chrome.runtime.lastError.message;
+            if (typeof chrome !== 'undefined' && (chrome.tabs || chrome.runtime)) {
+                // Step 1: Detect the active tab to check if it's an internal or restricted browser page
+                let activeTab = null;
+                if (chrome.tabs && chrome.tabs.query) {
+                    try {
+                        const tabs = await new Promise((resolve) => {
+                            chrome.tabs.query({ active: true, lastFocusedWindow: true }, (t) => {
+                                if (t && t.length > 0) resolve(t);
+                                else chrome.tabs.query({ active: true, currentWindow: true }, resolve);
+                            });
+                        });
+                        activeTab = tabs && tabs[0];
+                    } catch (e) {
+                        console.warn('Could not query active tab:', e);
+                    }
+                }
+
+                // If on an internal browser page, inform the user cleanly (prevents false permission alerts)
+                if (activeTab && activeTab.url) {
+                    const u = activeTab.url.toLowerCase();
+                    const isInternal = u.startsWith('chrome://') ||
+                                       u.startsWith('chrome-extension://') ||
+                                       u.startsWith('edge://') ||
+                                       u.startsWith('about:') ||
+                                       u.startsWith('view-source:') ||
+                                       u.startsWith('devtools://') ||
+                                       u.includes('chromewebstore.google.com') ||
+                                       u.includes('chrome.google.com/webstore');
+
+                    if (isInternal) {
+                        const targetName = u.startsWith('chrome://extensions') ? 'chrome://extensions'
+                                         : u.startsWith('chrome://newtab') ? 'New Tab'
+                                         : (activeTab.title || 'Internal browser page');
+
+                        elAiResponse.innerHTML = `
+                            <div class="vision-notice-card">
+                                <div class="vision-notice-header">
+                                    <span class="vision-notice-badge">🔒 Chrome Restricted Page</span>
+                                    <button id="btn-close-vision" class="icon-close-sm" title="Dismiss">✕</button>
+                                </div>
+                                <div class="vision-notice-title">Cannot scan <code>${escapeHtml(targetName)}</code></div>
+                                <p class="vision-notice-text">
+                                    Chrome's security sandbox strictly blocks extensions from taking screenshots or reading data on browser settings, extension managers, and Web Store pages.
+                                </p>
+                                <div class="vision-notice-action">
+                                    <span class="vision-notice-arrow">👉</span>
+                                    <div>
+                                        <strong>Ready to scan:</strong> Switch to any website tab (e.g. news, documentation, YouTube, Wikipedia, or <a href="https://tiltcheck.me" target="_blank" style="color:var(--teal-l);text-decoration:underline">TiltCheck</a>), then click <strong>📸 Scan Webpage</strong>!
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        const btnClose = document.getElementById('btn-close-vision');
+                        if (btnClose) btnClose.onclick = () => elAiResponse.classList.add('hidden');
                         return;
                     }
-                    if (response && response.success && response.dataUrl) {
-                        try {
-                            const b64 = response.dataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
-                            const analysis = await AIHelper.analyzeScreenImage(b64);
-                            renderVisionResult(analysis);
-                        } catch (err) {
-                            if (err && err.message === 'NO_GEMINI_KEY') {
-                                elAiResponse.innerHTML = `📸 <strong>Webpage captured!</strong> To analyze it with AI, paste your free Gemini API key in <a href="#" id="link-open-settings" style="color:var(--purple-l);text-decoration:underline">⚙️ Settings</a> (get one free at <a href="https://aistudio.google.com" target="_blank" style="color:var(--teal-l)">aistudio.google.com</a>).`;
-                                const link = document.getElementById('link-open-settings');
-                                if (link) {
-                                    link.onclick = (e) => {
-                                        e.preventDefault();
-                                        document.getElementById('modal-settings').classList.remove('hidden');
-                                        const keyInput = document.getElementById('sf-gemini-key');
-                                        if (keyInput) keyInput.focus();
-                                    };
+                }
+
+                // Step 2: Attempt capture (direct call in side panel context first, then background worker fallback)
+                let captureResult = null;
+                const winId = activeTab ? activeTab.windowId : null;
+
+                if (chrome.tabs && chrome.tabs.captureVisibleTab) {
+                    try {
+                        const directUrl = await new Promise((resolve, reject) => {
+                            chrome.tabs.captureVisibleTab(winId, { format: 'jpeg', quality: 50 }, (dataUrl) => {
+                                if (chrome.runtime.lastError || !dataUrl) {
+                                    chrome.tabs.captureVisibleTab(null, { format: 'jpeg', quality: 50 }, (dataUrl2) => {
+                                        if (chrome.runtime.lastError || !dataUrl2) {
+                                            reject(new Error(chrome.runtime.lastError ? chrome.runtime.lastError.message : 'Direct capture failed'));
+                                        } else {
+                                            resolve(dataUrl2);
+                                        }
+                                    });
+                                } else {
+                                    resolve(dataUrl);
                                 }
+                            });
+                        });
+                        captureResult = { success: true, dataUrl: directUrl };
+                    } catch (directErr) {
+                        console.warn('Direct capture failed, trying background worker:', directErr);
+                    }
+                }
+
+                if (!captureResult && chrome.runtime && chrome.runtime.sendMessage) {
+                    captureResult = await new Promise((resolve) => {
+                        chrome.runtime.sendMessage({ action: 'capture_active_tab' }, (res) => {
+                            if (chrome.runtime.lastError) {
+                                resolve({ success: false, error: chrome.runtime.lastError.message });
+                            } else if (res) {
+                                resolve(res);
                             } else {
-                                elAiResponse.textContent = "⚠️ Vision analysis: " + (err.message || 'Error communicating with AI service');
+                                resolve({ success: false, error: 'No response from background script' });
                             }
-                        }
-                    } else if (response && response.error) {
-                        const err = String(response.error);
-                        if (err.includes('chrome://') || err.includes('cannot access') || err.includes('Cannot access')) {
-                            elAiResponse.innerHTML = "💡 <strong>Browser Internal Tab:</strong> Chrome blocks capturing <code>chrome://</code> pages for security. Switch to any regular website (docs, email, articles) and click <em>📸 Scan Webpage</em>!";
-                        } else if (err.includes('activeTab') || err.includes('all_urls')) {
-                            elAiResponse.innerHTML = "💡 <strong>Permission Update:</strong> Click the refresh ↻ icon next to FreezeFix on <code>chrome://extensions</code> so updated tab permissions take effect, then scan any web page!";
+                        });
+                    });
+                }
+
+                // Step 3: Handle capture success
+                if (captureResult && captureResult.success && captureResult.dataUrl) {
+                    try {
+                        const b64 = captureResult.dataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
+                        const analysis = await AIHelper.analyzeScreenImage(b64);
+                        renderVisionResult(analysis);
+                    } catch (err) {
+                        if (err && err.message === 'NO_GEMINI_KEY') {
+                            elAiResponse.innerHTML = `
+                                <div class="vision-notice-card">
+                                    <div class="vision-notice-header">
+                                        <span class="vision-notice-badge">📸 Tab Captured</span>
+                                        <button id="btn-close-vision" class="icon-close-sm" title="Dismiss">✕</button>
+                                    </div>
+                                    <div class="vision-notice-title">Gemini API Key Required</div>
+                                    <p class="vision-notice-text">
+                                        Webpage screenshot captured successfully! To analyze it with Vision AI, add your free Gemini key in <a href="#" id="link-open-settings" style="color:var(--purple-l);text-decoration:underline;font-weight:600">⚙️ Settings</a> (free at <a href="https://aistudio.google.com" target="_blank" style="color:var(--teal-l)">aistudio.google.com</a>).
+                                    </p>
+                                </div>
+                            `;
+                            const link = document.getElementById('link-open-settings');
+                            if (link) {
+                                link.onclick = (e) => {
+                                    e.preventDefault();
+                                    document.getElementById('modal-settings').classList.remove('hidden');
+                                    const keyInput = document.getElementById('sf-gemini-key');
+                                    if (keyInput) keyInput.focus();
+                                };
+                            }
+                            const btnClose = document.getElementById('btn-close-vision');
+                            if (btnClose) btnClose.onclick = () => elAiResponse.classList.add('hidden');
                         } else {
-                            elAiResponse.textContent = "⚠️ Tab capture note: " + err;
+                            elAiResponse.innerHTML = `
+                                <div class="vision-notice-card">
+                                    <div class="vision-notice-header">
+                                        <span class="vision-notice-badge" style="color:#ef4444; border-color:rgba(239,68,68,0.3); background:rgba(239,68,68,0.1)">⚠️ AI Analysis Note</span>
+                                        <button id="btn-close-vision" class="icon-close-sm" title="Dismiss">✕</button>
+                                    </div>
+                                    <p class="vision-notice-text">${escapeHtml(err.message || 'Error communicating with AI service')}</p>
+                                </div>
+                            `;
+                            const btnClose = document.getElementById('btn-close-vision');
+                            if (btnClose) btnClose.onclick = () => elAiResponse.classList.add('hidden');
                         }
                     }
-                });
+                    return;
+                }
+
+                // Step 4: Diagnostic for capture failures
+                const errMsg = String(captureResult?.error || 'Capture failed');
+
+                // Check if background reported internal page
+                if (captureResult?.isInternalPage) {
+                    elAiResponse.innerHTML = `
+                        <div class="vision-notice-card">
+                            <div class="vision-notice-header">
+                                <span class="vision-notice-badge">🔒 Chrome Restricted Page</span>
+                                <button id="btn-close-vision" class="icon-close-sm" title="Dismiss">✕</button>
+                            </div>
+                            <div class="vision-notice-title">Cannot scan internal browser page</div>
+                            <p class="vision-notice-text">
+                                Chrome does not permit screenshot capture of internal browser settings or extension pages.
+                            </p>
+                            <div class="vision-notice-action">
+                                <span class="vision-notice-arrow">👉</span>
+                                <div>
+                                    Switch to any regular website tab (e.g. articles, docs, YouTube, news, or work) and click <strong>📸 Scan Webpage</strong>!
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    const btnClose = document.getElementById('btn-close-vision');
+                    if (btnClose) btnClose.onclick = () => elAiResponse.classList.add('hidden');
+                    return;
+                }
+
+                // Check actual manifest permissions
+                let hasAllUrls = false;
+                if (chrome.permissions && chrome.permissions.contains) {
+                    try {
+                        hasAllUrls = await new Promise((r) => chrome.permissions.contains({ origins: ['<all_urls>'] }, r));
+                    } catch (_) {}
+                }
+
+                if (!hasAllUrls && (errMsg.includes('activeTab') || errMsg.includes('all_urls'))) {
+                    elAiResponse.innerHTML = `
+                        <div class="vision-notice-card">
+                            <div class="vision-notice-header">
+                                <span class="vision-notice-badge" style="color:#f59e0b; border-color:rgba(245,158,11,0.3); background:rgba(245,158,11,0.1)">💡 Permission Setup</span>
+                                <button id="btn-close-vision" class="icon-close-sm" title="Dismiss">✕</button>
+                            </div>
+                            <div class="vision-notice-title">Reload Extension in Chrome</div>
+                            <p class="vision-notice-text">
+                                Updated tab capture permissions are ready. Go to <code>chrome://extensions</code> and click the ↻ reload icon on FreezeFix.
+                            </p>
+                            <div class="vision-notice-action">
+                                <span class="vision-notice-arrow">👉</span>
+                                <div>
+                                    After clicking ↻ reload, <strong>switch to any website tab</strong> (not chrome://extensions) and click <strong>📸 Scan Webpage</strong>!
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    elAiResponse.innerHTML = `
+                        <div class="vision-notice-card">
+                            <div class="vision-notice-header">
+                                <span class="vision-notice-badge">⚠️ Tab Scanner Note</span>
+                                <button id="btn-close-vision" class="icon-close-sm" title="Dismiss">✕</button>
+                            </div>
+                            <div class="vision-notice-title">Could not capture active tab</div>
+                            <p class="vision-notice-text">${escapeHtml(errMsg)}</p>
+                            <div class="vision-notice-action">
+                                <span class="vision-notice-arrow">👉</span>
+                                <div>
+                                    Make sure your active tab is on a normal website (e.g. Wikipedia, YouTube, news, docs) and try again.
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+                const btnClose = document.getElementById('btn-close-vision');
+                if (btnClose) btnClose.onclick = () => elAiResponse.classList.add('hidden');
                 return;
             }
 

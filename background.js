@@ -12,22 +12,57 @@ chrome.runtime.onInstalled.addListener(() => {
 // Bridge tab capture requests from side panel
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'capture_active_tab') {
-    // Explicitly target the last focused window so side panel capture succeeds
-    chrome.windows.getLastFocused({ populate: false }, (win) => {
-      const windowId = (win && typeof win.id === 'number') ? win.id : null;
-      chrome.tabs.captureVisibleTab(windowId, { format: 'jpeg', quality: 50 }, (dataUrl) => {
-        if (chrome.runtime.lastError || !dataUrl) {
-          const errMsg = chrome.runtime.lastError ? chrome.runtime.lastError.message : 'Failed to capture tab';
+    // 1. Query the currently active tab in the last focused window
+    chrome.tabs.query({ active: true, lastFocusedWindow: true }, (tabs) => {
+      const activeTab = tabs && tabs[0];
+      const winId = activeTab ? activeTab.windowId : null;
+
+      // Check if the tab is an internal or restricted browser URL
+      if (activeTab && activeTab.url) {
+        const u = activeTab.url.toLowerCase();
+        if (
+          u.startsWith('chrome://') ||
+          u.startsWith('chrome-extension://') ||
+          u.startsWith('edge://') ||
+          u.startsWith('about:') ||
+          u.startsWith('view-source:') ||
+          u.startsWith('devtools://') ||
+          u.includes('chromewebstore.google.com') ||
+          u.includes('chrome.google.com/webstore')
+        ) {
           sendResponse({
             success: false,
-            error: errMsg
+            error: 'RESTRICTED_BROWSER_PAGE',
+            isInternalPage: true,
+            url: activeTab.url,
+            title: activeTab.title || 'Internal Browser Page'
           });
-        } else {
-          sendResponse({
-            success: true,
-            dataUrl: dataUrl
-          });
+          return;
         }
+      }
+
+      // 2. Capture visible tab with windowId
+      chrome.tabs.captureVisibleTab(winId, { format: 'jpeg', quality: 50 }, (dataUrl) => {
+        if (!chrome.runtime.lastError && dataUrl) {
+          sendResponse({ success: true, dataUrl });
+          return;
+        }
+
+        // Fallback: try capturing without explicit windowId
+        chrome.tabs.captureVisibleTab(null, { format: 'jpeg', quality: 50 }, (dataUrl2) => {
+          if (chrome.runtime.lastError || !dataUrl2) {
+            const errMsg = chrome.runtime.lastError ? chrome.runtime.lastError.message : 'Failed to capture tab';
+            sendResponse({
+              success: false,
+              error: errMsg
+            });
+          } else {
+            sendResponse({
+              success: true,
+              dataUrl: dataUrl2
+            });
+          }
+        });
       });
     });
     return true; // Keep message channel open for async sendResponse
