@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.9] — 2026-11-08
+
+### Fixed
+- **Tasks Page Scrolling Overhaul**: Fixed an issue where the Tasks backlog page could not scroll down. Removed `overflow: hidden` and rigid `height: 100%` constraints on `.panel` in `#view-tasks`, allowing the page to scroll smoothly from top to bottom.
+- **Scroll Trap Elimination**: Ensured mousewheel and touch gestures from anywhere on the screen (stats bar, weekly grid, filter chips, smart suggestions banner, or task items) scroll the unified `#view-tasks` container seamlessly.
+- **Accessible Bottom Actions**: Guaranteed that the "+ Add Task" button and bottom task items are never pushed offscreen or clipped.
+- **Visible Scrollbar Styling**: Upgraded the scrollbar thumb with a crisp, visible translucent glass finish across all side-panel views.
+
 ## [1.1.8] — 2026-11-08
 
 ### Fixed & Enhanced
