@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.5] — 2026-11-08
+
+### Added
+- **Core Clinical UX Architecture**: Implemented the 4 foundational ADHD interaction principles across the entire suite: Low-Friction Scaffolding, Cognitive Load Minimization, The Invisible Guardrail Pattern, and Frictionless Exits.
+- **"📥 Add All to Day Flow" (Vision Scan)**: Webpage AI analysis results now include an instant 1-click button to sequentialize all recommended actions into the Day Flow timeline in order with zero forms or manual scheduling.
+- **"🆘 Stuck?" Freeze Breaker & Paralysis Guardrail**: Added an inline rescue panel to the NOW focus card (`AIHelper.generateStuckRescue()`) generating a 30-sec physical starter move and a "good-enough" finish line to shatter executive dysfunction. Unobtrusively pulses amber when timers finish without completion.
+- **Smart Brain Dump Scaffolding**: Unobtrusive floating bridge appears after capturing ambiguous tasks (3+ words), offering a 1-click option to split the task into 3 starter steps. Automatically fades after 8 seconds without ever blocking input.
+- **Universal Frictionless Exits**: Hitting `Escape` or clicking `✕` immediately dismisses any open prompt, rescue card, or scaffolding pill without penalty or modal traps.
+
 ## [1.1.4] — 2026-11-08
 
 ### Fixed

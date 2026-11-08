@@ -484,7 +484,10 @@ document.addEventListener('DOMContentLoaded', () => {
         renderAll();
     };
 
-    // ── Brain Dump (Instant Frictionless Capture) ──
+    // ── Brain Dump (Instant Frictionless Capture & Invisible Scaffolding) ──
+    const elBrainScaffold = document.getElementById('brain-scaffold-container');
+    let brainScaffoldTimeout = null;
+
     function handleBrainDump() {
         const text = elBrainInput.value.trim();
         if (!text) {
@@ -494,7 +497,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const est = estimateDuration(text) || 15;
         
         // Directly create the task for instant unfreezing (PMC12289795)
-        TaskManager.create({
+        const newTask = TaskManager.create({
             name: text,
             duration: est,
             priority: 3,
@@ -507,6 +510,70 @@ document.addEventListener('DOMContentLoaded', () => {
         elBrainInput.value = '';
         showToast(`⚡ Captured: "${text}" (${est}m)`);
         renderAll();
+
+        // The "Invisible Guardrail" Pattern:
+        // If the task has 3+ words or action verbs, offer a non-intrusive floating bridge
+        if (elBrainScaffold && text.split(/\s+/).length >= 3) {
+            showBrainScaffold(newTask);
+        } else if (elBrainScaffold) {
+            elBrainScaffold.classList.add('hidden');
+        }
+    }
+
+    function showBrainScaffold(task) {
+        if (!elBrainScaffold || !task) return;
+        if (brainScaffoldTimeout) clearTimeout(brainScaffoldTimeout);
+
+        elBrainScaffold.innerHTML = `
+            <div class="brain-scaffold-pill">
+                <span class="scaffold-spark">🪄</span>
+                <span class="scaffold-msg">Big task?</span>
+                <button class="btn-scaffold-break" data-id="${task.id}" title="Break into 3 starter steps">Break into 3 steps</button>
+                <button class="btn-scaffold-dismiss" title="Dismiss (Esc)">✕</button>
+            </div>
+        `;
+        elBrainScaffold.classList.remove('hidden');
+
+        // Dismiss button (Frictionless Exit)
+        const btnDismiss = elBrainScaffold.querySelector('.btn-scaffold-dismiss');
+        if (btnDismiss) {
+            btnDismiss.onclick = () => {
+                elBrainScaffold.classList.add('hidden');
+            };
+        }
+
+        // Break button: converts bulky task into 3 clean, low-friction micro-steps
+        const btnBreak = elBrainScaffold.querySelector('.btn-scaffold-break');
+        if (btnBreak) {
+            btnBreak.onclick = async () => {
+                btnBreak.textContent = 'Breaking down...';
+                btnBreak.disabled = true;
+                const steps = await AIHelper.generateTaskBreakdown(task.name);
+                if (steps && steps.length > 0) {
+                    // Remove the bulky task and replace with the 3 micro-steps
+                    TaskManager.remove(task.id);
+                    steps.forEach(st => {
+                        TaskManager.create({
+                            name: st.name,
+                            duration: st.duration,
+                            category: task.category || 'work',
+                            priority: task.priority || 3
+                        });
+                    });
+                    playDopamineChime();
+                    showToast(`Replaced with ${steps.length} starter steps! 🧩`);
+                    elBrainScaffold.classList.add('hidden');
+                    renderAll();
+                } else {
+                    elBrainScaffold.classList.add('hidden');
+                }
+            };
+        }
+
+        // Auto-fade after 8 seconds of inactivity so it never clutters screen
+        brainScaffoldTimeout = setTimeout(() => {
+            if (elBrainScaffold) elBrainScaffold.classList.add('hidden');
+        }, 8000);
     }
     elBtnBrainAdd.onclick = handleBrainDump;
     elBrainInput.onkeydown = (e) => { if (e.key === 'Enter') handleBrainDump(); };
@@ -600,7 +667,12 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 pauseTimer();
                 playDopamineChime();
-                showToast('🔔 Time is up! Great work!');
+                showToast('🔔 Focus block complete! Need a boost? Click 🆘 Stuck?');
+                const btnStuck = document.getElementById('btn-now-stuck');
+                if (btnStuck) {
+                    btnStuck.classList.add('pulse-rescue');
+                    setTimeout(() => btnStuck.classList.remove('pulse-rescue'), 10000);
+                }
             }
         }, 1000);
     }
@@ -771,6 +843,130 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast(`Added ${currentBreakdownSteps.length} micro-steps! 🪄`);
         renderAll();
     };
+
+    // ── 🆘 I'm Stuck Rescue System (The Invisible Guardrail Pattern) ──
+    const elBtnNowStuck = document.getElementById('btn-now-stuck');
+    const elStuckPanel = document.getElementById('stuck-rescue-panel');
+
+    async function triggerStuckRescue() {
+        if (!elStuckPanel) return;
+        if (!currentFocusTask) {
+            showToast('Start or pick a focus task first! 🎯');
+            return;
+        }
+
+        if (!elStuckPanel.classList.contains('hidden') && elStuckPanel.innerHTML) {
+            elStuckPanel.classList.add('hidden');
+            return;
+        }
+
+        elStuckPanel.classList.remove('hidden');
+        elStuckPanel.innerHTML = `
+            <div class="vision-loading" style="padding:10px 12px;font-size:12px">
+                <span class="vision-loading-spinner">🆘</span>
+                <span>Finding 2 trivial starter moves to break freeze...</span>
+            </div>
+        `;
+
+        const rescue = await AIHelper.generateStuckRescue(currentFocusTask.name);
+        renderStuckRescuePanel(rescue);
+    }
+
+    if (elBtnNowStuck) {
+        elBtnNowStuck.onclick = triggerStuckRescue;
+    }
+
+    function renderStuckRescuePanel(rescue) {
+        if (!elStuckPanel || !rescue) return;
+        const starter = rescue.starter || { title: 'Take 1 slow breath & open the window', detail: 'Zero obligation to do real work for 60 seconds.', duration: 1 };
+        const goodEnough = rescue.good_enough || { title: 'Do 3 minutes of minimum effort', detail: 'Stop as soon as the timer rings.', duration: 3 };
+
+        elStuckPanel.innerHTML = `
+            <div class="stuck-rescue-container">
+                <div class="stuck-rescue-header">
+                    <span class="stuck-rescue-badge">🆘 FREEZE BREAKER (Pick 1)</span>
+                    <button id="btn-close-rescue" class="icon-close-sm" title="Dismiss (Esc)">✕</button>
+                </div>
+                <div class="stuck-rescue-cards">
+                    <!-- Starter Move -->
+                    <div class="stuck-card starter-card">
+                        <div class="stuck-card-main">
+                            <div class="stuck-card-tag">🚀 30-Sec Frictionless Starter</div>
+                            <div class="stuck-card-title">${escapeHtml(starter.title)}</div>
+                            ${starter.detail ? `<div class="stuck-card-detail">${escapeHtml(starter.detail)}</div>` : ''}
+                        </div>
+                        <button class="btn btn-primary btn-xs btn-adopt-rescue" data-title="${encodeURIComponent(starter.title)}" data-dur="${starter.duration || 2}">
+                            ⚡ Do This (${starter.duration || 2}m)
+                        </button>
+                    </div>
+
+                    <!-- Good Enough Finish Line -->
+                    <div class="stuck-card exit-card">
+                        <div class="stuck-card-main">
+                            <div class="stuck-card-tag">👍 "Good Enough" Exit</div>
+                            <div class="stuck-card-title">${escapeHtml(goodEnough.title)}</div>
+                            ${goodEnough.detail ? `<div class="stuck-card-detail">${escapeHtml(goodEnough.detail)}</div>` : ''}
+                        </div>
+                        <button class="btn btn-ghost btn-xs btn-adopt-rescue" data-title="${encodeURIComponent(goodEnough.title)}" data-dur="${goodEnough.duration || 5}">
+                            ⚡ Do This (${goodEnough.duration || 5}m)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const btnClose = document.getElementById('btn-close-rescue');
+        if (btnClose) {
+            btnClose.onclick = () => {
+                elStuckPanel.classList.add('hidden');
+                elStuckPanel.innerHTML = '';
+            };
+        }
+
+        elStuckPanel.querySelectorAll('.btn-adopt-rescue').forEach(btn => {
+            btn.onclick = () => {
+                const stepTitle = decodeURIComponent(btn.dataset.title);
+                const stepDur = parseInt(btn.dataset.dur, 10) || 3;
+                
+                // Update focus task to this micro-step to remove mental freeze
+                if (currentFocusTask) {
+                    currentFocusTask.name = stepTitle;
+                    currentFocusTask.duration = stepDur;
+                    TaskManager.update(currentFocusTask.id, { name: stepTitle, duration: stepDur });
+                }
+                setTimerMinutes(stepDur);
+                startTimer();
+                playDopamineChime();
+                showToast(`Started: "${stepTitle}" 🎯`);
+                elStuckPanel.classList.add('hidden');
+                renderAll();
+            };
+        });
+    }
+
+    // ── Frictionless Exits: Global Escape Key Listener ──
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            if (elStuckPanel && !elStuckPanel.classList.contains('hidden')) {
+                elStuckPanel.classList.add('hidden');
+            }
+            if (elBrainScaffold && !elBrainScaffold.classList.contains('hidden')) {
+                elBrainScaffold.classList.add('hidden');
+            }
+            if (elAiResponse && !elAiResponse.classList.contains('hidden')) {
+                elAiResponse.classList.add('hidden');
+            }
+            const elActContent = document.getElementById('activity-suggestions-content');
+            if (elActContent && !elActContent.classList.contains('hidden')) {
+                elActContent.classList.add('hidden');
+            }
+            [elModalTask, elModalSettings, elModalHistory, elModalBreakdown, elModalChangelog].forEach(m => {
+                if (m && !m.classList.contains('hidden')) {
+                    m.classList.add('hidden');
+                }
+            });
+        }
+    });
 
     function renderActivitySuggestions(result, targetContainer) {
         if (!targetContainer || !result) return;
@@ -1014,7 +1210,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="vision-result-container">
                     <div class="vision-result-header">
                         <span class="vision-result-badge">📸 Page Context</span>
-                        <button id="btn-close-vision" class="icon-close-sm" title="Dismiss advice">✕</button>
+                        <div style="display:flex;gap:6px;align-items:center">
+                            <button id="btn-vision-add-all" class="btn btn-ghost btn-xs btn-vision-add-all" title="Add all steps to Day Flow timeline">📥 Add All to Day Flow</button>
+                            <button id="btn-close-vision" class="icon-close-sm" title="Dismiss advice (Esc)">✕</button>
+                        </div>
                     </div>
                     <div class="vision-result-context">${contextText}</div>
                     <div class="vision-actions-label">RECOMMENDED NEXT STEPS:</div>
@@ -1030,6 +1229,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 btnClose.onclick = () => {
                     elAiResponse.classList.add('hidden');
                     elAiResponse.innerHTML = '';
+                };
+            }
+
+            // Wire "📥 Add All to Day Flow" button
+            const btnAddAll = document.getElementById('btn-vision-add-all');
+            if (btnAddAll) {
+                btnAddAll.onclick = () => {
+                    let lastEndTime = new Date();
+                    result.actions.forEach((act, i) => {
+                        const title = act.title || 'Micro-step';
+                        const dur = parseInt(act.duration, 10) || 5;
+                        const startTime = new Date(lastEndTime.getTime() + (i === 0 ? 0 : 2 * 60000));
+                        const endTime = new Date(startTime.getTime() + dur * 60000);
+                        lastEndTime = endTime;
+
+                        TaskManager.create({
+                            name: title,
+                            duration: dur,
+                            category: 'work',
+                            priority: 2,
+                            scheduledStart: startTime.toISOString(),
+                            scheduledEnd: endTime.toISOString(),
+                            notes: act.detail || ''
+                        });
+                    });
+                    playDopamineChime();
+                    showToast(`Scheduled ${result.actions.length} micro-steps to Day Flow! 📅`);
+                    elAiResponse.classList.add('hidden');
+                    renderAll();
                 };
             }
 

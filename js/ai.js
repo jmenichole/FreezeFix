@@ -510,5 +510,95 @@ Return JSON matching schema.`;
         };
     }
 
-    return { getKeys, generateTaskBreakdown, suggestNextTask, analyzeScreenImage, suggestTasksFromActivity };
+    async function generateStuckRescue(taskName) {
+        const { gemini } = getKeys();
+        if (gemini) {
+            try {
+                const prompt = `You are a clinical ADHD paralysis rescue specialist.
+The user is frozen/stuck on this task: "${taskName}".
+Generate exactly 2 concrete, low-friction physical micro-moves to shatter executive paralysis:
+1. "starter": a 30-sec to 2-min physical movement (e.g. "Crack the door open", "Put 2 dishes in sink", "Open file and type 1 comment").
+2. "good_enough": a 2-5 min stopping line to escape the perfectionist trap (e.g. "Write down 3 bullet notes and close tab", "Send current draft as-is").
+Return JSON matching schema.`;
+
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_PRIMARY_MODEL}:generateContent?key=${gemini}`;
+                const payload = {
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        response_mime_type: 'application/json',
+                        response_schema: {
+                            type: 'OBJECT',
+                            properties: {
+                                starter: {
+                                    type: 'OBJECT',
+                                    properties: {
+                                        title: { type: 'STRING' },
+                                        detail: { type: 'STRING' },
+                                        duration: { type: 'INTEGER' }
+                                    },
+                                    required: ['title', 'duration']
+                                },
+                                good_enough: {
+                                    type: 'OBJECT',
+                                    properties: {
+                                        title: { type: 'STRING' },
+                                        detail: { type: 'STRING' },
+                                        duration: { type: 'INTEGER' }
+                                    },
+                                    required: ['title', 'duration']
+                                }
+                            },
+                            required: ['starter', 'good_enough']
+                        },
+                        temperature: 0.3
+                    }
+                };
+
+                const resp = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (resp.ok) {
+                    const data = await resp.json();
+                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (text) {
+                        const parsed = JSON.parse(text.trim());
+                        if (parsed && parsed.starter && parsed.good_enough) {
+                            return parsed;
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn('AI stuck rescue fallback', err);
+            }
+        }
+
+        // Local Rule-Based Freeze Breaker (Instant & Offline)
+        const t = (taskName || '').toLowerCase();
+        if (t.includes('code') || t.includes('bug') || t.includes('script') || t.includes('git') || t.includes('repo')) {
+            return {
+                starter: { title: 'Open editor & type 1 comment describing the goal', detail: 'Do not write any real logic yet; just 1 English comment line.', duration: 2 },
+                good_enough: { title: 'Commit current work to a WIP branch', detail: 'Save whatever you have right now so your head is completely clear.', duration: 3 }
+            };
+        }
+        if (t.includes('write') || t.includes('doc') || t.includes('email') || t.includes('reply') || t.includes('message')) {
+            return {
+                starter: { title: 'Type 1 messy sentence without editing', detail: 'Mute your internal critic; write the ugliest first draft.', duration: 2 },
+                good_enough: { title: 'Send or save 3 key bullet points', detail: 'Bullet points are almost always good enough to move forward.', duration: 5 }
+            };
+        }
+        if (t.includes('clean') || t.includes('tidy') || t.includes('chore') || t.includes('room') || t.includes('dish')) {
+            return {
+                starter: { title: 'Put away exactly 3 physical items', detail: 'Pick up 3 things and place them where they belong.', duration: 2 },
+                good_enough: { title: 'Clear 1 small flat surface (e.g. desk corner)', detail: 'Stop as soon as that single corner is visible.', duration: 5 }
+            };
+        }
+        return {
+            starter: { title: 'Take 1 slow breath & open the relevant window', detail: 'Just look at the screen for 30 seconds with zero obligation to work.', duration: 1 },
+            good_enough: { title: 'Do 3 minutes of minimum viable effort', detail: 'Stop as soon as the timer rings—you have 100% permission to quit.', duration: 3 }
+        };
+    }
+
+    return { getKeys, generateTaskBreakdown, suggestNextTask, analyzeScreenImage, suggestTasksFromActivity, generateStuckRescue };
 })();

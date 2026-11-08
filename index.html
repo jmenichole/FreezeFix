@@ -71,6 +71,7 @@
                 <input id="brain-dump-input" type="text" placeholder="Type 1 thought or task, press Enter..." autocomplete="off">
                 <button id="btn-brain-add" class="btn btn-primary btn-sm" title="Add to focus queue">Add</button>
             </div>
+            <div id="brain-scaffold-container" class="brain-scaffold-container hidden"></div>
         </div>
 
         <!-- 🔥 Gamified Dopamine & Streak Flow Banner -->
@@ -156,11 +157,13 @@
             <div id="next-task-actions" class="now-actions-row">
                 <button id="btn-start-focus" class="btn btn-glow btn-sm">▶ Start Focus</button>
                 <button id="btn-now-breakdown" class="btn btn-ghost btn-sm" style="border-color:#8b5cf6;color:#a78bfa" title="Break this task into 5-minute micro-steps">🪄 Break Down</button>
+                <button id="btn-now-stuck" class="btn btn-ghost btn-sm btn-stuck-rescue" title="ADHD freeze rescue: 2 trivial starter moves to get unblocked">🆘 Stuck?</button>
                 <button id="btn-mark-done" class="btn btn-primary btn-sm" style="background:#10b981;border-color:#10b981;color:#fff">✓ Done!</button>
                 <button id="btn-good-enough" class="btn btn-ghost btn-sm" title="Finish this task enough to move on">👍 Good Enough</button>
                 <button id="btn-body-double" class="btn btn-ghost btn-sm" style="display:none">👥 Body Double</button>
                 <button id="btn-skip-task" class="btn btn-ghost btn-sm">→ Skip</button>
             </div>
+            <div id="stuck-rescue-panel" class="stuck-rescue-panel hidden"></div>
         </div>
 
         <!-- ⏭️ NEXT UP Card (Softens transition anxiety per Flynn OT guide) -->
