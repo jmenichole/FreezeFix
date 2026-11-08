@@ -329,8 +329,10 @@ document.addEventListener('DOMContentLoaded', () => {
             elNextMeta.textContent = "";
             if (elSubCont) elSubCont.classList.add('hidden');
             const elBtnNowBreakdown = document.getElementById('btn-now-breakdown');
+            const elBtnNowStuck = document.getElementById('btn-now-stuck');
             if (elBtnStartFocus) elBtnStartFocus.style.display = "none";
             if (elBtnNowBreakdown) elBtnNowBreakdown.style.display = "none";
+            if (elBtnNowStuck) elBtnNowStuck.style.display = "none";
             if (elBtnMarkDone) elBtnMarkDone.style.display = "none";
             if (elBtnGoodEnough) elBtnGoodEnough.style.display = "none";
             if (elBtnSkipTask) elBtnSkipTask.style.display = "none";
@@ -359,8 +361,10 @@ document.addEventListener('DOMContentLoaded', () => {
         elNextMeta.textContent = `${catInfo.icon} ${catInfo.label} • ⏱ ${currentFocusTask.duration} minutes`;
 
         const elBtnNowBreakdown = document.getElementById('btn-now-breakdown');
+        const elBtnNowStuck = document.getElementById('btn-now-stuck');
         if (elBtnStartFocus) elBtnStartFocus.style.display = "inline-flex";
         if (elBtnNowBreakdown) elBtnNowBreakdown.style.display = "inline-flex";
+        if (elBtnNowStuck) elBtnNowStuck.style.display = "inline-flex";
         if (elBtnBodyDouble) elBtnBodyDouble.style.display = "inline-flex";
         if (elBtnMarkDone) elBtnMarkDone.style.display = "inline-flex";
         if (elBtnGoodEnough) elBtnGoodEnough.style.display = "inline-flex";
@@ -512,8 +516,8 @@ document.addEventListener('DOMContentLoaded', () => {
         renderAll();
 
         // The "Invisible Guardrail" Pattern:
-        // If the task has 3+ words or action verbs, offer a non-intrusive floating bridge
-        if (elBrainScaffold && text.split(/\s+/).length >= 3) {
+        // Offer non-intrusive floating bridge for any task with 2+ words or key verbs
+        if (elBrainScaffold && (text.split(/\s+/).length >= 2 || text.length > 5)) {
             showBrainScaffold(newTask);
         } else if (elBrainScaffold) {
             elBrainScaffold.classList.add('hidden');
