@@ -711,34 +711,72 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     });
 
-    // ── Breakdown Modal & AI ──
+    // ── Breakdown Modal & AI (0ms Optimistic Scaffolding + Background AI Refine) ──
+    let breakdownSessionCounter = 0;
+    let breakdownUserInteracted = false;
+
     async function showTaskBreakdown(taskName) {
         if (!taskName) {
             showToast('Enter a task name first to break it down.');
             return;
         }
         currentBreakdownTaskName = taskName;
+        breakdownUserInteracted = false;
+        const sessionId = ++breakdownSessionCounter;
+
         const titleEl = document.getElementById('breakdown-task-title');
         const { gemini, groq } = AIHelper.getKeys();
         const hasAI = Boolean(gemini || groq);
-        const badgeHtml = `<span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px;margin-left:8px;${hasAI ? 'background:rgba(139,92,246,0.22);color:#c4b5fd' : 'background:rgba(6,182,212,0.18);color:#67e8f9'}">${hasAI ? '✨ AI Breakdown' : '⚡ Smart Heuristic'}</span>`;
+
+        // Instant optimistic steps from local heuristics (0ms latency!)
+        currentBreakdownSteps = TaskBreakdown.getLocalBreakdown(taskName);
+
+        const badgeHtml = `<span id="breakdown-badge" style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px;margin-left:8px;${hasAI ? 'background:rgba(139,92,246,0.22);color:#c4b5fd' : 'background:rgba(6,182,212,0.18);color:#67e8f9'}">${hasAI ? '✨ AI Breakdown' : '⚡ Smart Heuristic'}</span><span id="breakdown-ai-status" style="font-size:11px;color:var(--purple-l);margin-left:6px;font-weight:500;${hasAI ? '' : 'display:none'}"></span>`;
         titleEl.innerHTML = `<strong>Task:</strong> ${escapeHtml(taskName)} ${badgeHtml}`;
 
         const elList = document.getElementById('breakdown-steps');
         const elLoading = document.getElementById('breakdown-loading');
 
-        elList.innerHTML = '';
-        elLoading.classList.remove('hidden');
-        elModalBreakdown.classList.remove('hidden');
-
-        currentBreakdownSteps = await AIHelper.generateTaskBreakdown(taskName);
+        // Immediately show modal with optimistic steps rendered!
         elLoading.classList.add('hidden');
-
-        if (!currentBreakdownSteps || !currentBreakdownSteps.length) {
-            elList.innerHTML = '<div class="empty-state">No breakdown available yet. Try a simpler task description or add your task first.</div>';
-            return;
-        }
+        elModalBreakdown.classList.remove('hidden');
         renderBreakdownSteps();
+
+        // If no AI keys configured, we're done immediately!
+        if (!hasAI) return;
+
+        // If AI keys configured, asynchronously refine in background with zero UI freeze
+        const statusEl = document.getElementById('breakdown-ai-status');
+        if (statusEl) {
+            statusEl.textContent = '• refining...';
+            statusEl.style.display = 'inline';
+        }
+
+        try {
+            const aiSteps = await AIHelper.generateTaskBreakdown(taskName);
+            // Verify user hasn't closed modal, navigated away, or started editing steps
+            if (sessionId === breakdownSessionCounter && elModalBreakdown && !elModalBreakdown.classList.contains('hidden')) {
+                if (aiSteps && aiSteps.length && !breakdownUserInteracted) {
+                    currentBreakdownSteps = aiSteps;
+                    renderBreakdownSteps();
+                    const statusElAfter = document.getElementById('breakdown-ai-status');
+                    if (statusElAfter) {
+                        statusElAfter.textContent = '• refined ✨';
+                        statusElAfter.style.color = '#34d399';
+                        setTimeout(() => {
+                            if (statusElAfter) statusElAfter.textContent = '';
+                        }, 4000);
+                    }
+                } else {
+                    const statusElAfter = document.getElementById('breakdown-ai-status');
+                    if (statusElAfter) statusElAfter.textContent = '';
+                }
+            }
+        } catch (err) {
+            console.warn('Background AI refinement caught error:', err);
+            const statusElAfter = document.getElementById('breakdown-ai-status');
+            if (statusElAfter) statusElAfter.textContent = '';
+        }
     }
 
     window.startBreakdown = async function(id) {
@@ -781,7 +819,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 showToast('No task selected for breakdown yet.');
                 return;
             }
-            await showTaskBreakdown(currentBreakdownTaskName);
+            const elLoading = document.getElementById('breakdown-loading');
+            if (elLoading) elLoading.classList.remove('hidden');
+            breakdownUserInteracted = false;
+            try {
+                const freshSteps = await AIHelper.generateTaskBreakdown(currentBreakdownTaskName);
+                if (freshSteps && freshSteps.length) {
+                    currentBreakdownSteps = freshSteps;
+                    renderBreakdownSteps();
+                    showToast('Refreshed breakdown steps! 🪄');
+                }
+            } finally {
+                if (elLoading) elLoading.classList.add('hidden');
+            }
         };
     }
 
@@ -812,18 +862,21 @@ document.addEventListener('DOMContentLoaded', () => {
         // Edit handlers
         elList.querySelectorAll('.step-name-edit').forEach(inp => {
             inp.oninput = (e) => {
+                breakdownUserInteracted = true;
                 const i = parseInt(e.target.dataset.idx, 10);
                 if (currentBreakdownSteps[i]) currentBreakdownSteps[i].name = e.target.value;
             };
         });
         elList.querySelectorAll('.step-dur-edit').forEach(inp => {
             inp.onchange = (e) => {
+                breakdownUserInteracted = true;
                 const i = parseInt(e.target.dataset.idx, 10);
                 if (currentBreakdownSteps[i]) currentBreakdownSteps[i].duration = parseInt(e.target.value, 10) || 5;
             };
         });
         elList.querySelectorAll('.btn-step-delete').forEach(btn => {
             btn.onclick = (e) => {
+                breakdownUserInteracted = true;
                 const i = parseInt(e.target.dataset.idx, 10);
                 currentBreakdownSteps.splice(i, 1);
                 renderBreakdownSteps();
@@ -834,6 +887,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const elBtnAddBreakdownStep = document.getElementById('btn-breakdown-add-step');
     if (elBtnAddBreakdownStep) {
         elBtnAddBreakdownStep.onclick = () => {
+            breakdownUserInteracted = true;
             currentBreakdownSteps.push({ name: 'Next small action step', duration: 5 });
             renderBreakdownSteps();
         };
@@ -851,6 +905,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // ── 🆘 I'm Stuck Rescue System (The Invisible Guardrail Pattern) ──
     const elBtnNowStuck = document.getElementById('btn-now-stuck');
     const elStuckPanel = document.getElementById('stuck-rescue-panel');
+    let stuckRescueSessionCounter = 0;
+    let stuckRescueUserInteracted = false;
 
     async function triggerStuckRescue() {
         if (!elStuckPanel) return;
@@ -864,16 +920,28 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        elStuckPanel.classList.remove('hidden');
-        elStuckPanel.innerHTML = `
-            <div class="vision-loading" style="padding:10px 12px;font-size:12px">
-                <span class="vision-loading-spinner">🆘</span>
-                <span>Finding 2 trivial starter moves to break freeze...</span>
-            </div>
-        `;
+        stuckRescueUserInteracted = false;
+        const sessionId = ++stuckRescueSessionCounter;
 
-        const rescue = await AIHelper.generateStuckRescue(currentFocusTask.name);
-        renderStuckRescuePanel(rescue);
+        // Instant local freeze-breaker response in 0ms!
+        const localRescue = AIHelper.getLocalStuckRescue(currentFocusTask.name);
+        elStuckPanel.classList.remove('hidden');
+        renderStuckRescuePanel(localRescue);
+
+        const { gemini } = AIHelper.getKeys();
+        if (!gemini) return;
+
+        // Asynchronously refine in background if Gemini key is present
+        try {
+            const aiRescue = await AIHelper.generateStuckRescue(currentFocusTask.name);
+            if (sessionId === stuckRescueSessionCounter && !stuckRescueUserInteracted && !elStuckPanel.classList.contains('hidden')) {
+                if (aiRescue && aiRescue.starter && aiRescue.good_enough) {
+                    renderStuckRescuePanel(aiRescue);
+                }
+            }
+        } catch (err) {
+            console.warn('AI stuck rescue background error:', err);
+        }
     }
 
     if (elBtnNowStuck) {
@@ -929,6 +997,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         elStuckPanel.querySelectorAll('.btn-adopt-rescue').forEach(btn => {
             btn.onclick = () => {
+                stuckRescueUserInteracted = true;
                 const stepTitle = decodeURIComponent(btn.dataset.title);
                 const stepDur = parseInt(btn.dataset.dur, 10) || 3;
                 
@@ -1070,22 +1139,45 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    elBtnWhatsNext.onclick = async () => {
-        elAiResponse.classList.remove('hidden');
-        elAiResponse.innerHTML = `
-            <div class="vision-loading">
-                <span class="vision-loading-spinner">🤖</span>
-                <span>Analyzing your day flow & activity...</span>
-            </div>
-        `;
+    async function showActivitySuggestionsInEl(targetContainer) {
+        if (!targetContainer) return;
+        targetContainer.classList.remove('hidden');
 
         const pending = TaskManager.getPending();
         const allHistory = HistoryManager.getAll();
         const todayStr = new Date().toDateString();
         const completedToday = allHistory.filter(h => h.dateStr === todayStr);
 
-        const result = await AIHelper.suggestTasksFromActivity(allHistory, completedToday, pending);
-        renderActivitySuggestions(result, elAiResponse);
+        const now = new Date();
+        const hour = now.getHours();
+        let timeOfDay = 'afternoon';
+        if (hour >= 5 && hour < 11) timeOfDay = 'morning';
+        else if (hour >= 11 && hour < 14) timeOfDay = 'midday';
+        else if (hour >= 14 && hour < 18) timeOfDay = 'afternoon';
+        else if (hour >= 18 && hour < 22) timeOfDay = 'evening';
+        else timeOfDay = 'night';
+
+        // Render instant local suggestions in 0ms!
+        const localResult = AIHelper.getLocalActivitySuggestions(hour, timeOfDay, completedToday, allHistory);
+        renderActivitySuggestions(localResult, targetContainer);
+
+        const { gemini } = AIHelper.getKeys();
+        if (!gemini) return;
+
+        // In background, refine with AI if Gemini is available
+        try {
+            const aiResult = await AIHelper.suggestTasksFromActivity(allHistory, completedToday, pending);
+            if (aiResult && Array.isArray(aiResult.suggestions) && aiResult.suggestions.length && !targetContainer.classList.contains('hidden')) {
+                renderActivitySuggestions(aiResult, targetContainer);
+            }
+        } catch (err) {
+            console.warn('Activity suggestions AI error:', err);
+        }
+    }
+
+    elBtnWhatsNext.onclick = async () => {
+        await showActivitySuggestionsInEl(elAiResponse);
+        const pending = TaskManager.getPending();
         if (!pending.length && elBrainInput) {
             elBrainInput.focus();
         }
@@ -1100,22 +1192,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 elActivityContent.classList.add('hidden');
                 return;
             }
-
-            elActivityContent.classList.remove('hidden');
-            elActivityContent.innerHTML = `
-                <div class="vision-loading">
-                    <span class="vision-loading-spinner">✨</span>
-                    <span>Checking your activity history & time of day...</span>
-                </div>
-            `;
-
-            const pending = TaskManager.getPending();
-            const allHistory = HistoryManager.getAll();
-            const todayStr = new Date().toDateString();
-            const completedToday = allHistory.filter(h => h.dateStr === todayStr);
-
-            const result = await AIHelper.suggestTasksFromActivity(allHistory, completedToday, pending);
-            renderActivitySuggestions(result, elActivityContent);
+            await showActivitySuggestionsInEl(elActivityContent);
         };
     }
 
@@ -1310,6 +1387,40 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btnClose) btnClose.onclick = () => elAiResponse.classList.add('hidden');
     }
 
+    function downscaleImageForVision(dataUrl, maxDimension = 1024, quality = 0.6) {
+        return new Promise((resolve) => {
+            try {
+                const img = new Image();
+                img.onload = () => {
+                    let width = img.width;
+                    let height = img.height;
+                    if (width > maxDimension || height > maxDimension) {
+                        if (width > height) {
+                            height = Math.round((height * maxDimension) / width);
+                            width = maxDimension;
+                        } else {
+                            width = Math.round((width * maxDimension) / height);
+                            height = maxDimension;
+                        }
+                    }
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    const downscaledUrl = canvas.toDataURL('image/jpeg', quality);
+                    resolve(downscaledUrl.replace(/^data:image\/[a-z]+;base64,/, ''));
+                };
+                img.onerror = () => {
+                    resolve(dataUrl.replace(/^data:image\/[a-z]+;base64,/, ''));
+                };
+                img.src = dataUrl;
+            } catch (_) {
+                resolve(dataUrl.replace(/^data:image\/[a-z]+;base64,/, ''));
+            }
+        });
+    }
+
     const elBtnScanScreen = document.getElementById('btn-scan-screen');
     if (elBtnScanScreen) {
         elBtnScanScreen.onclick = async () => {
@@ -1424,7 +1535,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Step 3: Handle capture success
                 if (captureResult && captureResult.success && captureResult.dataUrl) {
                     try {
-                        const b64 = captureResult.dataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
+                        const b64 = await downscaleImageForVision(captureResult.dataUrl, 1024, 0.6);
                         const analysis = await AIHelper.analyzeScreenImage(b64);
                         renderVisionResult(analysis);
                     } catch (err) {
