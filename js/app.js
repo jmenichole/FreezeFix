@@ -120,23 +120,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateClock() {
+        if (!elClock) return;
         const now = new Date();
         let hours = now.getHours();
         const mins = String(now.getMinutes()).padStart(2, '0');
         const ampm = hours >= 12 ? 'PM' : 'AM';
         hours = hours % 12;
         hours = hours ? hours : 12; // convert 0 to 12
-        const hrsStr = String(hours).padStart(2, '0');
+        const hrsStr = String(hours);
         
-        elClock.textContent = `${hrsStr}:${mins} ${ampm}`;
-        elClockDate.textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+        elClock.innerHTML = `<span class="clock-digits">${hrsStr}:${mins}</span> <span class="clock-ampm">${ampm}</span>`;
+        if (elClockDate) {
+            elClockDate.textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+        }
 
-        const hour = now.getHours();
-        let greeting = '🌙 Rest up & unwind';
-        if (hour >= 5 && hour < 12) greeting = '🌅 Good morning! Ready for a fresh start?';
-        else if (hour >= 12 && hour < 17) greeting = '☀️ Good afternoon! Stay in your flow';
-        else if (hour >= 17 && hour < 22) greeting = '🌆 Evening session — wrap up strong';
-        elGreeting.textContent = greeting;
+        if (elGreeting) {
+            const hour = now.getHours();
+            let greeting = '🌙 Rest up & unwind';
+            if (hour >= 5 && hour < 12) greeting = '🌅 Good morning! Fresh start';
+            else if (hour >= 12 && hour < 17) greeting = '☀️ Good afternoon! Stay in your flow';
+            else if (hour >= 17 && hour < 22) greeting = '🌆 Evening session — wrap up strong';
+            elGreeting.textContent = greeting;
+        }
     }
 
     // ── Render Controller ──
@@ -767,16 +772,152 @@ document.addEventListener('DOMContentLoaded', () => {
         renderAll();
     };
 
+    function renderActivitySuggestions(result, targetContainer) {
+        if (!targetContainer || !result) return;
+        const contextText = escapeHtml(result.context || 'Suggested for your day flow:');
+        let suggestionsHtml = '';
+
+        (result.suggestions || []).forEach((sug) => {
+            const title = escapeHtml(sug.title || 'Micro-step');
+            const reason = escapeHtml(sug.reason || '');
+            const dur = parseInt(sug.duration, 10) || 5;
+            const cat = escapeHtml(sug.category || 'work');
+
+            suggestionsHtml += `
+                <div class="activity-suggest-card">
+                    <div class="activity-suggest-main">
+                        <div class="activity-suggest-title">👉 ${title}</div>
+                        ${reason ? `<div class="activity-suggest-detail">${reason}</div>` : ''}
+                        <div class="activity-suggest-meta">
+                            <span class="activity-suggest-dur">⏱ ${dur}m</span>
+                        </div>
+                    </div>
+                    <div class="activity-suggest-actions">
+                        <button class="btn btn-ghost btn-xs btn-suggest-add" data-title="${encodeURIComponent(sug.title)}" data-dur="${dur}" data-cat="${cat}" title="Add to task backlog">
+                            + Add
+                        </button>
+                        <button class="btn btn-primary btn-xs btn-suggest-start" data-title="${encodeURIComponent(sug.title)}" data-dur="${dur}" data-cat="${cat}" title="Start focus timer now">
+                            ⚡ Do Now
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        targetContainer.innerHTML = `
+            <div class="activity-suggest-container">
+                <div class="activity-suggest-header">
+                    <span class="activity-suggest-badge">✨ Smart Flow Suggestions</span>
+                    <button class="icon-close-sm btn-close-suggest" title="Dismiss">✕</button>
+                </div>
+                <div class="activity-suggest-context">${contextText}</div>
+                <div class="activity-suggest-list">
+                    ${suggestionsHtml}
+                </div>
+            </div>
+        `;
+
+        // Wire close button
+        const btnClose = targetContainer.querySelector('.btn-close-suggest');
+        if (btnClose) {
+            btnClose.onclick = () => {
+                targetContainer.classList.add('hidden');
+                targetContainer.innerHTML = '';
+            };
+        }
+
+        // Wire "+ Add" buttons
+        targetContainer.querySelectorAll('.btn-suggest-add').forEach(btn => {
+            btn.onclick = () => {
+                const taskTitle = decodeURIComponent(btn.dataset.title);
+                const dur = parseInt(btn.dataset.dur, 10) || 15;
+                const cat = btn.dataset.cat || 'work';
+                TaskManager.create({
+                    name: taskTitle,
+                    duration: dur,
+                    category: cat,
+                    priority: 3
+                });
+                showToast(`Added "${taskTitle}" to tasks! 📋`);
+                playDopamineChime();
+                renderAll();
+                btn.textContent = '✓ Added';
+                btn.disabled = true;
+                btn.style.opacity = '0.6';
+            };
+        });
+
+        // Wire "⚡ Do Now" buttons
+        targetContainer.querySelectorAll('.btn-suggest-start').forEach(btn => {
+            btn.onclick = () => {
+                const taskTitle = decodeURIComponent(btn.dataset.title);
+                const dur = parseInt(btn.dataset.dur, 10) || 5;
+                const cat = btn.dataset.cat || 'work';
+                const newTask = TaskManager.create({
+                    name: taskTitle,
+                    duration: dur,
+                    category: cat,
+                    priority: 1
+                });
+                currentFocusTask = newTask;
+                setTimerMinutes(dur);
+                startTimer();
+                playDopamineChime();
+                showToast(`Started: "${taskTitle}" 🎯`);
+                targetContainer.classList.add('hidden');
+                renderAll();
+            };
+        });
+    }
+
     elBtnWhatsNext.onclick = async () => {
         elAiResponse.classList.remove('hidden');
-        elAiResponse.textContent = "Thinking...";
+        elAiResponse.innerHTML = `
+            <div class="vision-loading">
+                <span class="vision-loading-spinner">🤖</span>
+                <span>Analyzing your day flow & activity...</span>
+            </div>
+        `;
+
         const pending = TaskManager.getPending();
-        const advice = await AIHelper.suggestNextTask(pending, HistoryManager.getStreak());
-        elAiResponse.innerHTML = escapeHtml(advice).replace(/\n/g, '<br>');
+        const allHistory = HistoryManager.getAll();
+        const todayStr = new Date().toDateString();
+        const completedToday = allHistory.filter(h => h.dateStr === todayStr);
+
+        const result = await AIHelper.suggestTasksFromActivity(allHistory, completedToday, pending);
+        renderActivitySuggestions(result, elAiResponse);
         if (!pending.length && elBrainInput) {
             elBrainInput.focus();
         }
     };
+
+    const elBtnTriggerActivity = document.getElementById('btn-trigger-activity-suggestions');
+    const elActivityContent = document.getElementById('activity-suggestions-content');
+
+    if (elBtnTriggerActivity && elActivityContent) {
+        elBtnTriggerActivity.onclick = async () => {
+            if (!elActivityContent.classList.contains('hidden') && elActivityContent.innerHTML) {
+                elActivityContent.classList.add('hidden');
+                return;
+            }
+
+            elActivityContent.classList.remove('hidden');
+            elActivityContent.innerHTML = `
+                <div class="vision-loading">
+                    <span class="vision-loading-spinner">✨</span>
+                    <span>Checking your activity history & time of day...</span>
+                </div>
+            `;
+
+            const pending = TaskManager.getPending();
+            const allHistory = HistoryManager.getAll();
+            const todayStr = new Date().toDateString();
+            const completedToday = allHistory.filter(h => h.dateStr === todayStr);
+
+            const result = await AIHelper.suggestTasksFromActivity(allHistory, completedToday, pending);
+            renderActivitySuggestions(result, elActivityContent);
+        };
+    }
 
     function extractActionsFromText(text) {
         if (!text || typeof text !== 'string') return null;

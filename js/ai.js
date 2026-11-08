@@ -276,5 +276,239 @@ Return JSON with this schema:
         }
     }
 
-    return { getKeys, generateTaskBreakdown, suggestNextTask, analyzeScreenImage };
+    async function suggestTasksFromActivity(history = [], completedToday = [], pendingTasks = []) {
+        const now = new Date();
+        const hour = now.getHours();
+        let timeOfDay = 'afternoon';
+        if (hour >= 5 && hour < 11) timeOfDay = 'morning';
+        else if (hour >= 11 && hour < 14) timeOfDay = 'midday';
+        else if (hour >= 14 && hour < 18) timeOfDay = 'afternoon';
+        else if (hour >= 18 && hour < 22) timeOfDay = 'evening';
+        else timeOfDay = 'night';
+
+        const timeStr = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+
+        // Check if Gemini API key is configured
+        const { gemini } = getKeys();
+        if (gemini) {
+            try {
+                const completedStr = completedToday.map(t => `- "${t.taskName || t.name}" (${t.plannedDuration || t.duration || 15}m, ${t.category || 'work'})`).join('\n');
+                const pendingStr = pendingTasks.slice(0, 5).map(t => `- "${t.name}" (${t.duration}m)`).join('\n');
+                const recentHistoryStr = history.slice(0, 8).map(t => `- "${t.taskName}" (${t.category})`).join('\n');
+
+                const promptText = `You are a clinical ADHD executive dysfunction productivity coach.
+Current local time: ${timeStr} (${timeOfDay}).
+Tasks completed today (${completedToday.length}):
+${completedStr || 'None logged yet today.'}
+
+Recent completion history:
+${recentHistoryStr || 'None.'}
+
+Current pending tasks:
+${pendingStr || 'None.'}
+
+Based on what the user completed today, cognitive stamina, and the current time of day, suggest 2 to 3 practical next tasks to add to their list right now.
+Rules:
+- Actions must be concrete physical body movements (e.g. "Commit & push git branch", "Drink glass of water & 3-minute stretch", "Draft 2-sentence reply").
+- Duration must be small (2 to 15 minutes) to break initiation inertia.
+- Categorize as work, health, personal, learning, or chores.
+Return JSON matching schema.`;
+
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_PRIMARY_MODEL}:generateContent?key=${gemini}`;
+                const payload = {
+                    contents: [{ parts: [{ text: promptText }] }],
+                    generationConfig: {
+                        response_mime_type: 'application/json',
+                        response_schema: {
+                            type: 'OBJECT',
+                            properties: {
+                                context: { type: 'STRING' },
+                                suggestions: {
+                                    type: 'ARRAY',
+                                    items: {
+                                        type: 'OBJECT',
+                                        properties: {
+                                            title: { type: 'STRING' },
+                                            reason: { type: 'STRING' },
+                                            duration: { type: 'INTEGER' },
+                                            category: { type: 'STRING' }
+                                        },
+                                        required: ['title', 'reason', 'duration', 'category']
+                                    }
+                                }
+                            },
+                            required: ['context', 'suggestions']
+                        },
+                        temperature: 0.4
+                    }
+                };
+
+                let resp = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (resp.ok) {
+                    const data = await resp.json();
+                    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (rawText) {
+                        const parsed = JSON.parse(rawText.trim());
+                        if (parsed && Array.isArray(parsed.suggestions) && parsed.suggestions.length > 0) {
+                            return parsed;
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn('AI activity suggestion failed, fallback to local heuristics:', err);
+            }
+        }
+
+        // ── Local Rule-Based Heuristic Fallback ──
+        return getLocalActivitySuggestions(hour, timeOfDay, completedToday, history);
+    }
+
+    function getLocalActivitySuggestions(hour, timeOfDay, completedToday = [], history = []) {
+        const suggestions = [];
+        let context = '';
+
+        const doneCount = completedToday.length;
+        const lastTask = completedToday[completedToday.length - 1] || history[0];
+        const lastTitle = (lastTask?.taskName || lastTask?.name || '').toLowerCase();
+
+        // 1. Follow-up heuristic from most recent completed task
+        if (lastTitle.includes('code') || lastTitle.includes('bug') || lastTitle.includes('feature') || lastTitle.includes('dev') || lastTitle.includes('script')) {
+            suggestions.push({
+                title: 'Commit & push changes to Git',
+                reason: `Save your progress from "${lastTask.taskName || 'coding'}" before context switching.`,
+                duration: 5,
+                category: 'work'
+            });
+        } else if (lastTitle.includes('email') || lastTitle.includes('message') || lastTitle.includes('slack')) {
+            suggestions.push({
+                title: 'Close communication tabs & return to deep work',
+                reason: 'Prevent reactive tab-hopping after checking messages.',
+                duration: 2,
+                category: 'work'
+            });
+        } else if (lastTitle.includes('dish') || lastTitle.includes('clean') || lastTitle.includes('laundry')) {
+            suggestions.push({
+                title: 'Wipe kitchen counter or fold 3 shirts',
+                reason: 'Ride physical momentum with one tiny follow-up.',
+                duration: 5,
+                category: 'personal'
+            });
+        }
+
+        // 2. Cognitive balance / hydration check if working hard
+        if (doneCount >= 2 && !suggestions.some(s => s.category === 'health')) {
+            suggestions.push({
+                title: 'Drink a glass of water & 2-minute stretch',
+                reason: `You've crushed ${doneCount} tasks today — reset your mental battery.`,
+                duration: 3,
+                category: 'health'
+            });
+        }
+
+        // 3. Time-of-day contextual slots
+        if (timeOfDay === 'morning') {
+            context = doneCount ? `Good morning! You already have ${doneCount} win${doneCount > 1 ? 's' : ''} logged.` : 'Good morning! Here are low-friction starters for your day:';
+            if (suggestions.length < 3) {
+                suggestions.push({
+                    title: 'Review #1 main goal for today',
+                    reason: 'Pick one priority before opening distracting browser tabs.',
+                    duration: 5,
+                    category: 'work'
+                });
+            }
+            if (suggestions.length < 3) {
+                suggestions.push({
+                    title: 'Morning hydration & meds/vitamins check',
+                    reason: 'Physical baseline check to support executive function.',
+                    duration: 2,
+                    category: 'health'
+                });
+            }
+        } else if (timeOfDay === 'midday') {
+            context = `Midday flow (${doneCount} task${doneCount === 1 ? '' : 's'} done):`;
+            if (suggestions.length < 3) {
+                suggestions.push({
+                    title: 'Take a screen-free lunch or snack break',
+                    reason: 'Midday glucose & sensory reset prevents afternoon crash.',
+                    duration: 15,
+                    category: 'health'
+                });
+            }
+            if (suggestions.length < 3) {
+                suggestions.push({
+                    title: 'Quick 5-minute fresh air walk or stretch',
+                    reason: 'Reset circulation and clear mental fog.',
+                    duration: 5,
+                    category: 'health'
+                });
+            }
+        } else if (timeOfDay === 'afternoon') {
+            context = `Afternoon session (${doneCount} completed today):`;
+            if (suggestions.length < 3) {
+                suggestions.push({
+                    title: '10-minute low-friction inbox / admin sweep',
+                    reason: 'Great low-energy task to maintain momentum during the 2-4 PM dip.',
+                    duration: 10,
+                    category: 'work'
+                });
+            }
+            if (suggestions.length < 3) {
+                suggestions.push({
+                    title: '15-minute focused sprint on top priority',
+                    reason: 'Set a short timer and make progress on your main goal.',
+                    duration: 15,
+                    category: 'work'
+                });
+            }
+        } else if (timeOfDay === 'evening') {
+            context = `Evening wrap-up (${doneCount} task${doneCount === 1 ? '' : 's'} crushed today):`;
+            if (suggestions.length < 3) {
+                suggestions.push({
+                    title: 'End-of-day shutdown: Note tomorrow’s #1 priority',
+                    reason: 'Clear mental clutter so you can relax this evening.',
+                    duration: 5,
+                    category: 'work'
+                });
+            }
+            if (suggestions.length < 3) {
+                suggestions.push({
+                    title: '5-minute desk and room tidy reset',
+                    reason: 'Visual declutter lowers morning cortisol.',
+                    duration: 5,
+                    category: 'personal'
+                });
+            }
+        } else {
+            // Night
+            context = 'Night unwind:';
+            if (suggestions.length < 3) {
+                suggestions.push({
+                    title: 'Close all work tabs & dim screen brightness',
+                    reason: 'Signal to your brain that the workday is officially over.',
+                    duration: 3,
+                    category: 'health'
+                });
+            }
+            if (suggestions.length < 3) {
+                suggestions.push({
+                    title: 'Set clothes or gear out for tomorrow',
+                    reason: 'Frictionless prep for tomorrow morning.',
+                    duration: 5,
+                    category: 'personal'
+                });
+            }
+        }
+
+        return {
+            context: context || 'Suggested tasks based on your flow today:',
+            suggestions: suggestions.slice(0, 3)
+        };
+    }
+
+    return { getKeys, generateTaskBreakdown, suggestNextTask, analyzeScreenImage, suggestTasksFromActivity };
 })();

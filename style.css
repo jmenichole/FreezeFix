@@ -206,27 +206,63 @@ input,select,textarea { font-family:inherit; font-size:inherit; }
 
 /* ── Clock ─────────────────────────────────────────────── */
 #clock-section {
-  padding:22px var(--p-l) 16px;
-  text-align:center; flex-shrink:0;
-  border-bottom:1px solid var(--glass-b);
+  padding: 14px 16px;
+  text-align: center;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--glass-b);
+  border-radius: 14px;
+  margin: 12px 14px 6px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.15);
+}
+:root[data-theme="light"] #clock-section {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
 }
 
 #clock {
-  font-family:'Space Grotesk','Inter',sans-serif;
-  font-size:68px; font-weight:800;
-  line-height:1; letter-spacing:-4px;
-  background:linear-gradient(135deg,#f1f5f9 0%,var(--purple-l) 45%,var(--teal-l) 100%);
-  -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-  background-clip:text;
-  animation:shimmer 5s ease-in-out infinite;
-}
-@keyframes shimmer {
-  0%,100%{filter:brightness(1)}
-  50%{filter:brightness(1.18)}
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 6px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  line-height: 1.1;
 }
 
-#clock-date { font-size:13px; color:var(--t2); margin-top:5px; }
-#greeting   { font-size:12px; color:var(--t3); margin-top:3px; font-style:italic; }
+.clock-digits {
+  font-size: 32px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5px;
+  color: var(--t1);
+}
+:root[data-theme="light"] .clock-digits {
+  color: #0f172a;
+}
+
+.clock-ampm {
+  font-size: 13px;
+  font-weight: 700;
+  color: #06b6d4;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+#clock-date {
+  font-size: 11px;
+  color: var(--t2);
+  margin-top: 4px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+}
+
+#greeting {
+  font-size: 11px;
+  color: var(--purple-l);
+  margin-top: 4px;
+  font-weight: 600;
+}
 
 /* ── Next Task Card ────────────────────────────────────── */
 #next-task-card {
@@ -1939,4 +1975,153 @@ body.font-legible * {
 @keyframes pulseIcon {
   0%, 100% { transform: scale(1); opacity: 0.8; }
   50% { transform: scale(1.2); opacity: 1; }
+}
+
+/* ── ✨ Smart Activity & History Suggestions ──────────────── */
+.activity-suggest-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  animation: fadeIn 0.2s ease;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-b);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+:root[data-theme="light"] .activity-suggest-container {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+}
+.activity-suggest-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.activity-suggest-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #a78bfa;
+  background: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  padding: 2px 7px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+.activity-suggest-context {
+  font-size: 12px;
+  color: var(--t2);
+  line-height: 1.45;
+}
+.activity-suggest-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.activity-suggest-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(139, 92, 246, 0.2);
+  border-radius: 10px;
+  padding: 8px 10px;
+  transition: all 0.2s ease;
+}
+:root[data-theme="light"] .activity-suggest-card {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+.activity-suggest-card:hover {
+  border-color: var(--teal);
+  box-shadow: 0 4px 12px rgba(6, 182, 212, 0.12);
+}
+.activity-suggest-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+.activity-suggest-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--t1);
+  line-height: 1.3;
+}
+.activity-suggest-detail {
+  font-size: 11px;
+  color: var(--t3);
+  line-height: 1.35;
+}
+.activity-suggest-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+.activity-suggest-dur {
+  font-size: 10px;
+  color: #a78bfa;
+  font-weight: 600;
+}
+.activity-suggest-actions {
+  display: flex;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.btn-suggest-add {
+  padding: 4px 8px !important;
+  font-size: 11px !important;
+  border: 1px solid var(--glass-b) !important;
+  color: var(--t2) !important;
+  border-radius: 6px !important;
+}
+.btn-suggest-add:hover {
+  border-color: var(--purple) !important;
+  color: var(--purple-l) !important;
+}
+.btn-suggest-start {
+  padding: 4px 9px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  background: linear-gradient(135deg, var(--purple), var(--teal)) !important;
+  color: #fff !important;
+  border-radius: 6px !important;
+  border: none !important;
+}
+.btn-suggest-start:hover {
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.4) !important;
+  transform: scale(1.02);
+}
+
+/* Tasks tab trigger button */
+.activity-suggestions-bar {
+  margin: 6px 0 10px;
+}
+.btn-smart-suggest {
+  width: 100%;
+  padding: 7px 12px;
+  background: rgba(139, 92, 246, 0.08);
+  border: 1px dashed rgba(139, 92, 246, 0.35);
+  border-radius: 8px;
+  color: var(--purple-l);
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.btn-smart-suggest:hover {
+  background: rgba(139, 92, 246, 0.16);
+  border-style: solid;
+  border-color: var(--purple);
+  box-shadow: 0 2px 10px rgba(139, 92, 246, 0.15);
+}
+.activity-suggestions-content {
+  margin-top: 8px;
 }

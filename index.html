@@ -266,6 +266,13 @@
                 <div id="energy-filters" role="group" style="display:none">
                     <button class="chip active" data-energy="all" id="energy-all">All energy</button>
                 </div>
+                <!-- ✨ Smart Suggestions from Activity & History -->
+                <div id="activity-suggestions-banner" class="activity-suggestions-bar">
+                    <button id="btn-trigger-activity-suggestions" class="btn-smart-suggest" title="Suggest task list items based on your activity today">
+                        <span>✨ Smart Suggestions from Activity</span>
+                    </button>
+                    <div id="activity-suggestions-content" class="activity-suggestions-content hidden"></div>
+                </div>
                 <div id="task-list" role="list"></div>
                 <div id="task-list-add-row" style="margin-top:14px">
                     <button id="btn-add-task" class="btn btn-primary btn-block" title="Add a new task manually">+ Add Task</button>

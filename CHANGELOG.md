@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.4] — 2026-11-08
+
+### Fixed
+- **Bottom Clock Typography & Readability**: Overhauled the bottom clock widget (`#clock`). Replaced the 68px Space Grotesk font with `-4px` negative letter-spacing (which caused numbers and letters to smash together into an unreadable solid blob) with a crisp, modern `Inter` typography stack (`font-variant-numeric: tabular-nums`, `letter-spacing: 0.5px`, `32px font-size`), distinct cyan AM/PM tag, and an elegant glass card.
+
+### Added
+- **Smart Task Suggestions Based on Activity & Time of Day**:
+  - Implemented `AIHelper.suggestTasksFromActivity()` combining Gemini 3.8 Flash structured suggestions with rich local heuristics.
+  - Automatically assesses what you accomplished today, cognitive stamina, and the current time of day (morning, midday, afternoon, evening, night).
+  - Generates 2-3 tailored micro-actions with 1-click `[+ Add]` (adds to backlog) and `[⚡ Do Now]` (instantly loads timer, plays dopamine chime, and starts focus mode).
+  - Integrated into both `🤖 What next?` in the Focus tab and a dedicated `✨ Smart Suggestions from Activity` button in the Tasks tab.
+
 ## [1.1.3] — 2026-11-08
 
 ### Fixed
