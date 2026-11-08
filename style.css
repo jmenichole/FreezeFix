@@ -1200,3 +1200,264 @@ body.font-legible * {
   font-family: 'Atkinson Hyperlegible', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
   letter-spacing: 0.015em;
 }
+
+
+/* ════════════════════════════════════════════════════════
+   FREEZE-BUSTER DISTRACTOR-FREE CLINICAL REDESIGN (OT/PMC)
+   ════════════════════════════════════════════════════════ */
+
+/* Main Header & Nav */
+.top-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--glass);
+  border-bottom: 1px solid var(--glass-b);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  gap: 8px;
+  flex-shrink: 0;
+  z-index: 100;
+}
+.brand-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 700;
+  font-size: 13px;
+  color: var(--t1);
+  letter-spacing: -0.2px;
+}
+.brand-icon { font-size: 16px; }
+
+.tab-pill-group {
+  display: flex;
+  background: rgba(0, 0, 0, 0.3);
+  padding: 3px;
+  border-radius: 20px;
+  border: 1px solid var(--glass-b);
+  gap: 2px;
+}
+:root[data-theme="light"] .tab-pill-group {
+  background: #e2e8f0;
+}
+
+.tab-pill {
+  background: transparent;
+  border: none;
+  color: var(--t3);
+  padding: 4px 10px;
+  border-radius: 14px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.tab-pill:hover { color: var(--t1); }
+.tab-pill.active {
+  background: var(--purple);
+  color: #ffffff !important;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.45);
+}
+
+.top-tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.tool-btn {
+  background: transparent;
+  border: 1px solid var(--glass-b);
+  border-radius: 8px;
+  padding: 4px 7px;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--t2);
+  transition: all 0.15s;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.tool-btn:hover {
+  background: var(--glass-hov);
+  color: var(--t1);
+  border-color: var(--purple-l);
+}
+.kofi-btn {
+  border-color: rgba(121, 75, 196, 0.5);
+  background: rgba(121, 75, 196, 0.18);
+  color: #a78bfa;
+}
+
+/* App Views */
+.app-view {
+  display: none;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  overflow-y: auto;
+  flex: 1;
+  height: calc(100vh - 48px);
+}
+.app-view.active-view {
+  display: flex !important;
+}
+
+/* Quick Brain Dump Card */
+.brain-dump-card {
+  background: var(--glass);
+  border: 1px solid var(--glass-b);
+  border-radius: 14px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.dump-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.dump-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--purple-l);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.dump-input-row {
+  display: flex;
+  gap: 6px;
+}
+.dump-input-row input {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+}
+
+/* 🎯 NOW Focus Card */
+.now-focus-card {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.14), rgba(6, 182, 212, 0.08));
+  border: 1.5px solid var(--purple);
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 8px 28px rgba(139, 92, 246, 0.16);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: all 0.2s ease;
+}
+:root[data-theme="light"] .now-focus-card {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.08), rgba(6, 182, 212, 0.05));
+  border-color: #8b5cf6;
+  box-shadow: 0 4px 20px rgba(139, 92, 246, 0.1);
+}
+.now-badge-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+}
+.now-badge {
+  background: var(--purple);
+  color: #fff;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 10px;
+}
+.now-meta {
+  color: var(--t2);
+  font-size: 11px;
+  font-weight: 500;
+}
+.now-task-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--t1);
+  line-height: 1.35;
+  letter-spacing: -0.2px;
+}
+
+/* Embedded Timer Inside Now Card */
+.now-timer-section {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(0, 0, 0, 0.22);
+  border-radius: 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--glass-b);
+}
+:root[data-theme="light"] .now-timer-section {
+  background: #f1f5f9;
+}
+.timer-action-column {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+.now-actions-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+.now-actions-row .btn {
+  font-size: 12px;
+  padding: 6px 12px;
+}
+
+/* ⏭️ Next Peek Card */
+.next-peek-card {
+  background: var(--glass);
+  border: 1px dashed var(--glass-b);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: all 0.2s;
+}
+.next-peek-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--teal-l);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.next-peek-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--t2);
+}
+
+/* AI Compact Row */
+.ai-compact-section {
+  margin-top: 4px;
+}
+.ai-button-row {
+  display: flex;
+  gap: 8px;
+}
+
+/* Side Panel layout overrides */
+@media (max-width: 850px) {
+  #app {
+    display: flex !important;
+    flex-direction: column !important;
+    margin-left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+}

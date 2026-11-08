@@ -332,6 +332,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (elBtnMarkDone) elBtnMarkDone.style.display = "inline-flex";
         if (elBtnGoodEnough) elBtnGoodEnough.style.display = "inline-flex";
         if (elBtnSkipTask) elBtnSkipTask.style.display = "inline-flex";
+
+        // Update NEXT UP peek card (PMC8733412 / OT schedule visual sequencing)
+        const elUpcomingName = document.getElementById('upcoming-task-name');
+        const elUpcomingMeta = document.getElementById('upcoming-task-meta');
+        const remaining = pending.filter(t => t.id !== currentFocusTask.id);
+        if (remaining.length > 0) {
+            const nextT = remaining[0];
+            const nextCat = TaskManager.CATEGORIES[nextT.category] || TaskManager.CATEGORIES.other;
+            if (elUpcomingName) elUpcomingName.textContent = nextT.name;
+            if (elUpcomingMeta) elUpcomingMeta.textContent = `${nextCat.icon} • ⏱ ${nextT.duration}m`;
+        } else {
+            if (elUpcomingName) elUpcomingName.textContent = "No upcoming tasks — enjoy your break! ☕";
+            if (elUpcomingMeta) elUpcomingMeta.textContent = "";
+        }
     }
 
     // ── Stats Bar ──
@@ -1287,4 +1301,73 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         reader.readAsText(file);
     };
+// ── Distractor-Free View Tabs (Clinical OT Redesign) ──
+    function initViewTabs() {
+        const tabBtns = document.querySelectorAll('.tab-pill');
+        const views = {
+            focus: document.getElementById('view-focus'),
+            timeline: document.getElementById('view-timeline'),
+            tasks: document.getElementById('view-tasks')
+        };
+
+        function setView(viewName) {
+            tabBtns.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.view === viewName);
+            });
+            Object.keys(views).forEach(key => {
+                if (views[key]) {
+                    views[key].classList.toggle('active-view', key === viewName);
+                }
+            });
+            try { localStorage.setItem('freezefix_active_view', viewName); } catch (e) {}
+        }
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => setView(btn.dataset.view));
+        });
+
+        const savedView = localStorage.getItem('freezefix_active_view') || 'focus';
+        setView(savedView);
+    }
+    initViewTabs();
+
+    // ── Header Quick Tools ──
+    const btnHeaderSettings = document.getElementById('btn-header-settings');
+    if (btnHeaderSettings) {
+        btnHeaderSettings.onclick = () => {
+            if (elModalSettings) {
+                renderIntegrationList();
+                elModalSettings.classList.remove('hidden');
+            }
+        };
+    }
+
+    const btnHeaderHistory = document.getElementById('btn-header-history');
+    if (btnHeaderHistory) {
+        btnHeaderHistory.onclick = () => {
+            if (elModalHistory) {
+                renderHistoryModal();
+                elModalHistory.classList.remove('hidden');
+            }
+        };
+    }
+
+    const btnHeaderHelp = document.getElementById('btn-header-help');
+    if (btnHeaderHelp) {
+        btnHeaderHelp.onclick = () => {
+            if (elModalHelp) elModalHelp.classList.remove('hidden');
+        };
+    }
+
+    // ── Quick Duration Chips in Add Task Modal ──
+    const durationChips = document.querySelectorAll('.duration-preset');
+    const elTfDurationInput = document.getElementById('tf-duration');
+    durationChips.forEach(chip => {
+        chip.addEventListener('click', () => {
+            durationChips.forEach(c => c.classList.remove('active'));
+            chip.classList.add('active');
+            if (elTfDurationInput) elTfDurationInput.value = chip.dataset.min;
+        });
+    });
 });
+
