@@ -813,7 +813,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             }
                         }
                     } else if (response && response.error) {
-                        elAiResponse.textContent = "⚠️ Tab capture: " + response.error;
+                        const err = String(response.error);
+                        if (err.includes('chrome://') || err.includes('cannot access') || err.includes('Cannot access')) {
+                            elAiResponse.innerHTML = "💡 <strong>Browser Internal Tab:</strong> Chrome blocks capturing <code>chrome://</code> pages for security. Switch to any regular website (docs, email, articles) and click <em>📸 Scan Webpage</em>!";
+                        } else if (err.includes('activeTab') || err.includes('all_urls')) {
+                            elAiResponse.innerHTML = "💡 <strong>Permission Update:</strong> Click the refresh ↻ icon next to FreezeFix on <code>chrome://extensions</code> so updated tab permissions take effect, then scan any web page!";
+                        } else {
+                            elAiResponse.textContent = "⚠️ Tab capture note: " + err;
+                        }
                     }
                 });
                 return;

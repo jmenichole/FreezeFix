@@ -63,10 +63,17 @@ View your day’s tasks mapped along a clean vertical timeline. Behind schedule?
 
 Copy and paste these exact justifications into the Chrome Developer Dashboard:
 
+### API Permissions:
 | Permission | Reviewer Justification |
 | :--- | :--- |
 | **`sidePanel`** | Required to display the FreezeFix companion interface docked alongside the user's active browsing session in Chrome's native side panel, providing continuous executive function guidance without context switching. |
-| **`activeTab`** | Required solely when the user explicitly clicks the "Scan Webpage" / "Scan Screen" button to capture the visible area of their active tab for AI-assisted task breakdown and distraction-free work summarization. |
+| **`activeTab`** | Required solely when the user explicitly clicks the "Scan Webpage" button to capture the visible area of their active tab for AI-assisted task breakdown and distraction-free work summarization. |
+| **`tabs`** | Required to identify the user's active window/tab target for screenshot capture and executive function guidance. |
+
+### Host Permissions:
+| Host Pattern | Reviewer Justification |
+| :--- | :--- |
+| **`<all_urls>`** | Required solely for `chrome.tabs.captureVisibleTab` when invoked from the side panel to capture the visual content of the user's active webpage for on-demand ADHD task breakdown. Does not inject remote scripts or read cookies. |
 
 ---
 

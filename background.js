@@ -12,18 +12,23 @@ chrome.runtime.onInstalled.addListener(() => {
 // Bridge tab capture requests from side panel
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'capture_active_tab') {
-    chrome.tabs.captureVisibleTab(null, { format: 'jpeg', quality: 75 }, (dataUrl) => {
-      if (chrome.runtime.lastError || !dataUrl) {
-        sendResponse({
-          success: false,
-          error: chrome.runtime.lastError ? chrome.runtime.lastError.message : 'Failed to capture tab'
-        });
-      } else {
-        sendResponse({
-          success: true,
-          dataUrl: dataUrl
-        });
-      }
+    // Explicitly target the last focused window so side panel capture succeeds
+    chrome.windows.getLastFocused({ populate: false }, (win) => {
+      const windowId = (win && typeof win.id === 'number') ? win.id : null;
+      chrome.tabs.captureVisibleTab(windowId, { format: 'jpeg', quality: 75 }, (dataUrl) => {
+        if (chrome.runtime.lastError || !dataUrl) {
+          const errMsg = chrome.runtime.lastError ? chrome.runtime.lastError.message : 'Failed to capture tab';
+          sendResponse({
+            success: false,
+            error: errMsg
+          });
+        } else {
+          sendResponse({
+            success: true,
+            dataUrl: dataUrl
+          });
+        }
+      });
     });
     return true; // Keep message channel open for async sendResponse
   }

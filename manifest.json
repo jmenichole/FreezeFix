@@ -23,7 +23,8 @@
   },
   "permissions": [
     "sidePanel",
-    "activeTab"
+    "activeTab",
+    "tabs"
   ],
   "background": {
     "service_worker": "background.js"
@@ -36,5 +37,8 @@
       },
       "description": "Toggle FreezeFix Side Panel"
     }
-  }
+  },
+  "host_permissions": [
+    "<all_urls>"
+  ]
 }
