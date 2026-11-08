@@ -94,7 +94,7 @@ const AIHelper = (() => {
 
     async function suggestNextTask(pendingTasks, streak) {
         if (!pendingTasks.length) {
-            return "🎉 All caught up! Enjoy your break or dump a new task in the Brain Dump!";
+            return "🎉 All caught up! Enjoy your break, or type your next goal in the Brain Dump above! 👆";
         }
 
         const taskListStr = pendingTasks.map(t => `- ${t.name} (Duration: ${t.duration}m, Priority: ${t.priority})`).join('\n');

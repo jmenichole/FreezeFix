@@ -60,14 +60,15 @@
     ──────────────────────────────────────────────────── -->
     <section id="view-focus" class="app-view active-view">
         
-        <!-- Ultra-Low Friction Quick Dump -->
-        <div class="brain-dump-card">
+        <!-- ⚡ BRAIN DUMP: Sticky Instant Capture -->
+        <div id="brain-dump-section" class="brain-dump-card">
             <div class="dump-header">
-                <span class="dump-label">⚡ What are you stuck on right now?</span>
+                <span class="dump-label">⚡ BRAIN DUMP</span>
+                <span class="dump-sub">Clear your mind & unfreeze</span>
             </div>
             <div class="dump-input-row">
-                <input id="brain-dump-input" type="text" placeholder="Type 1 task here, press Enter..." autocomplete="off">
-                <button id="btn-brain-add" class="btn btn-primary btn-sm">Add</button>
+                <input id="brain-dump-input" type="text" placeholder="Type 1 thought or task, press Enter..." autocomplete="off">
+                <button id="btn-brain-add" class="btn btn-primary btn-sm" title="Add to focus queue">Add</button>
             </div>
         </div>
 
@@ -114,6 +115,7 @@
             <!-- Action Buttons -->
             <div id="next-task-actions" class="now-actions-row">
                 <button id="btn-start-focus" class="btn btn-glow btn-sm">▶ Start Focus</button>
+                <button id="btn-now-breakdown" class="btn btn-ghost btn-sm" style="border-color:#8b5cf6;color:#a78bfa" title="Break this task into 5-minute micro-steps">🪄 Break Down</button>
                 <button id="btn-mark-done" class="btn btn-primary btn-sm" style="background:#10b981;border-color:#10b981;color:#fff">✓ Done!</button>
                 <button id="btn-good-enough" class="btn btn-ghost btn-sm" title="Finish this task enough to move on">👍 Good Enough</button>
                 <button id="btn-body-double" class="btn btn-ghost btn-sm" style="display:none">👥 Body Double</button>
@@ -498,6 +500,8 @@
             <div class="form-group checkbox-group">
                 <label><input id="sf-sounds" type="checkbox" checked> Enable sound cues</label>
             </div>
+        </div>
+
         <div class="settings-section">
             <h4>❤️ Support & Creator Info</h4>
             <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">

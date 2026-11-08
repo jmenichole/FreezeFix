@@ -316,7 +316,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!currentFocusTask) {
             elNextName.textContent = "🎉 All done! Ready for a break or a new task.";
             elNextMeta.textContent = "";
+            const elBtnNowBreakdown = document.getElementById('btn-now-breakdown');
             if (elBtnStartFocus) elBtnStartFocus.style.display = "none";
+            if (elBtnNowBreakdown) elBtnNowBreakdown.style.display = "none";
             if (elBtnMarkDone) elBtnMarkDone.style.display = "none";
             if (elBtnGoodEnough) elBtnGoodEnough.style.display = "none";
             if (elBtnSkipTask) elBtnSkipTask.style.display = "none";
@@ -327,7 +329,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const catInfo = TaskManager.CATEGORIES[currentFocusTask.category] || TaskManager.CATEGORIES.other;
         elNextMeta.textContent = `${catInfo.icon} ${catInfo.label} • ⏱ ${currentFocusTask.duration} minutes`;
 
+        const elBtnNowBreakdown = document.getElementById('btn-now-breakdown');
         if (elBtnStartFocus) elBtnStartFocus.style.display = "inline-flex";
+        if (elBtnNowBreakdown) elBtnNowBreakdown.style.display = "inline-flex";
         if (elBtnBodyDouble) elBtnBodyDouble.style.display = "inline-flex";
         if (elBtnMarkDone) elBtnMarkDone.style.display = "inline-flex";
         if (elBtnGoodEnough) elBtnGoodEnough.style.display = "inline-flex";
@@ -440,15 +444,29 @@ document.addEventListener('DOMContentLoaded', () => {
         renderAll();
     };
 
-    // ── Brain Dump ──
+    // ── Brain Dump (Instant Frictionless Capture) ──
     function handleBrainDump() {
         const text = elBrainInput.value.trim();
-        if (!text) return;
-        const est = estimateDuration(text);
-        // Open add modal so the user can confirm or adjust duration
-        openAddTaskModal(text, est);
+        if (!text) {
+            elBrainInput.focus();
+            return;
+        }
+        const est = estimateDuration(text) || 15;
+        
+        // Directly create the task for instant unfreezing (PMC12289795)
+        TaskManager.create({
+            name: text,
+            duration: est,
+            priority: 3,
+            category: 'other',
+            energy: 'medium',
+            decision: 'do',
+            scheduledStart: new Date().toISOString()
+        });
+
         elBrainInput.value = '';
-        showToast('Please confirm details for the new task');
+        showToast(`⚡ Captured: "${text}" (${est}m)`);
+        renderAll();
     }
     elBtnBrainAdd.onclick = handleBrainDump;
     elBrainInput.onkeydown = (e) => { if (e.key === 'Enter') handleBrainDump(); };
@@ -603,6 +621,13 @@ document.addEventListener('DOMContentLoaded', () => {
         await showTaskBreakdown(task.name);
     };
 
+    const elBtnNowBreakdown = document.getElementById('btn-now-breakdown');
+    if (elBtnNowBreakdown) {
+        elBtnNowBreakdown.onclick = async () => {
+            if (!currentFocusTask) return;
+            await showTaskBreakdown(currentFocusTask.name);
+        };
+    }
     const elBtnBreakdownFromModal = document.getElementById('btn-breakdown-from-modal');
     if (elBtnBreakdownFromModal) {
         elBtnBreakdownFromModal.onclick = async () => {
@@ -663,8 +688,12 @@ document.addEventListener('DOMContentLoaded', () => {
     elBtnWhatsNext.onclick = async () => {
         elAiResponse.classList.remove('hidden');
         elAiResponse.textContent = "Thinking...";
-        const advice = await AIHelper.suggestNextTask(TaskManager.getPending(), HistoryManager.getStreak());
+        const pending = TaskManager.getPending();
+        const advice = await AIHelper.suggestNextTask(pending, HistoryManager.getStreak());
         elAiResponse.innerHTML = escapeHtml(advice).replace(/\n/g, '<br>');
+        if (!pending.length && elBrainInput) {
+            elBrainInput.focus();
+        }
     };
 
     const elBtnScanScreen = document.getElementById('btn-scan-screen');
@@ -1052,11 +1081,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (window.innerWidth <= 850 && app) {
             app.style.marginLeft = '0';
             app.style.width = '100%';
-            return;
-        }
-
-        // Apply width
-        if (s.widgetWidth && app) {
+        } else if (s.widgetWidth && app) {
             const w = s.widgetWidth;
             if (w === '100vw') {
                 app.style.marginLeft = '0';

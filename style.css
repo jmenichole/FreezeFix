@@ -1305,15 +1305,29 @@ body.font-legible * {
   display: flex !important;
 }
 
-/* Quick Brain Dump Card */
+/* ⚡ BRAIN DUMP: Sticky Instant Capture Card */
+#brain-dump-section.brain-dump-card,
 .brain-dump-card {
-  background: var(--glass);
-  border: 1px solid var(--glass-b);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: rgba(13, 14, 28, 0.96);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border: 1.5px solid rgba(139, 92, 246, 0.45);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.45), 0 0 16px rgba(139, 92, 246, 0.15);
   border-radius: 14px;
   padding: 10px 12px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+  margin-bottom: 2px;
+}
+:root[data-theme="light"] #brain-dump-section.brain-dump-card,
+:root[data-theme="light"] .brain-dump-card {
+  background: rgba(255, 255, 255, 0.96);
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow: 0 4px 18px rgba(139, 92, 246, 0.15);
 }
 .dump-header {
   display: flex;
@@ -1322,20 +1336,46 @@ body.font-legible * {
 }
 .dump-label {
   font-size: 11px;
-  font-weight: 600;
-  color: var(--purple-l);
+  font-weight: 700;
+  color: #a78bfa;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.dump-sub {
+  font-size: 10px;
+  color: var(--t3);
+  font-weight: 500;
 }
 .dump-input-row {
   display: flex;
   gap: 6px;
 }
-.dump-input-row input {
+.dump-input-row input,
+#brain-dump-input {
   flex: 1;
-  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-b);
   border-radius: 8px;
+  padding: 8px 12px;
   font-size: 13px;
+  color: var(--t1);
+  outline: none;
+  transition: all var(--tr);
+}
+:root[data-theme="light"] .dump-input-row input,
+:root[data-theme="light"] #brain-dump-input {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+.dump-input-row input:focus,
+#brain-dump-input:focus {
+  border-color: var(--purple);
+  background: rgba(139, 92, 246, 0.1);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.25);
 }
 
 /* 🎯 NOW Focus Card */
