@@ -381,12 +381,15 @@
                     <input id="sf-groq-key" type="password" placeholder="gsk_..." style="flex:1">
                 </div>
             </div>
-            <div style="margin-top:12px;padding:10px;background:var(--glass);border-radius:var(--r);display:flex;align-items:center;justify-content:space-between">
+            <div style="margin-top:12px;padding:12px;background:var(--glass);border:1px solid var(--glass-b);border-radius:var(--r);display:flex;align-items:center;justify-content:space-between">
                 <div>
-                    <strong style="font-size:12px">Screen Vision Helper</strong>
-                    <div id="tracker-status" style="font-size:11px;color:var(--t3)">Status: Checking...</div>
+                    <div style="font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px">
+                        <span>📸 Webpage Vision Scanner</span>
+                        <span id="vision-badge" style="background:#10b981;color:#fff;font-size:10px;padding:1px 6px;border-radius:4px;font-weight:600">Built-in</span>
+                    </div>
+                    <div id="tracker-status" style="font-size:11px;color:var(--t3);margin-top:2px">Native in Chrome — zero Python or setup needed.</div>
                 </div>
-                <button type="button" id="btn-toggle-tracker" class="btn btn-ghost btn-xs" title="Check if the local tracker is running or start it">⚡ Check / Start</button>
+                <button type="button" id="btn-toggle-tracker" class="btn btn-ghost btn-xs" title="Test Webpage Scanner">⚡ Test Scan</button>
             </div>
         </div>
 
@@ -537,7 +540,7 @@
             <p><strong>Body-double</strong>: Mark a task for body-doubling when you want accountability or to pair with someone (a friend, coworker, or coach). It flags the task visually and can be used with external scheduling or reminders.</p>
             <p><strong>Break it Down</strong>: Use the 🪄 button on any task (or from the Add/Edit task modal) to generate micro-steps. AI will try to create 3–6 tiny steps; if no AI key is configured, the app falls back to local heuristics.</p>
             <p><strong>Energy & Action Plan</strong>: Set the Energy level to match how you feel now (High / Medium / Low). Use Action Plan to decide whether to Do, Delegate, or Delete a task quickly.</p>
-            <p><strong>Screen Vision & Tracker</strong>: The Screen Vision helper requires the local sidecar script (tracker.py). Open Settings → Screen Vision Helper and press <em>Check / Start</em>, or run <code>python tracker.py</code> from the app folder. Tracker enables screen capture and a local proxy for integrations.</p>
+            <p><strong>Webpage Vision Scanner</strong>: Click <em>📸 Scan Webpage</em> to instantly analyze what you are currently viewing in your browser. FreezeFix uses Google Gemini Vision AI to read the page and recommend your next micro-step. 100% built-in with zero software or Python required!</p>
             <p><strong>GitHub import</strong>: Removed from the UI to simplify the product. If you need GitHub imports later, they can be re-added as an explicit opt-in connector.</p>
             <hr style="opacity:.06;margin:12px 0">
             <p style="font-size:12px;color:var(--t3)">Tip: Add quick tasks with Brain Dump, then use <em>Break it Down</em> to turn intimidating tasks into tiny steps you can complete in short bursts.</p>

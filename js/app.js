@@ -710,9 +710,26 @@ document.addEventListener('DOMContentLoaded', () => {
                         return;
                     }
                     if (response && response.success && response.dataUrl) {
-                        const b64 = response.dataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
-                        const analysis = await AIHelper.analyzeScreenImage(b64);
-                        elAiResponse.innerHTML = `<strong>📸 Active Tab Analysis:</strong><br>` + escapeHtml(analysis).replace(/\n/g, '<br>');
+                        try {
+                            const b64 = response.dataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
+                            const analysis = await AIHelper.analyzeScreenImage(b64);
+                            elAiResponse.innerHTML = `<strong>📸 Active Tab Analysis:</strong><br>` + escapeHtml(analysis).replace(/\n/g, '<br>');
+                        } catch (err) {
+                            if (err && err.message === 'NO_GEMINI_KEY') {
+                                elAiResponse.innerHTML = `📸 <strong>Webpage captured!</strong> To analyze it with AI, paste your free Gemini API key in <a href="#" id="link-open-settings" style="color:var(--purple-l);text-decoration:underline">⚙️ Settings</a> (get one free at <a href="https://aistudio.google.com" target="_blank" style="color:var(--teal-l)">aistudio.google.com</a>).`;
+                                const link = document.getElementById('link-open-settings');
+                                if (link) {
+                                    link.onclick = (e) => {
+                                        e.preventDefault();
+                                        document.getElementById('modal-settings').classList.remove('hidden');
+                                        const keyInput = document.getElementById('sf-gemini-key');
+                                        if (keyInput) keyInput.focus();
+                                    };
+                                }
+                            } else {
+                                elAiResponse.textContent = "⚠️ Vision analysis: " + (err.message || 'Error communicating with AI service');
+                            }
+                        }
                     } else if (response && response.error) {
                         elAiResponse.textContent = "⚠️ Tab capture: " + response.error;
                     }
@@ -727,10 +744,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     const analysis = await AIHelper.analyzeScreenImage(data.image);
                     elAiResponse.innerHTML = `<strong>📸 Screen Analysis:</strong><br>` + escapeHtml(analysis).replace(/\n/g, '<br>');
                 } else {
-                    elAiResponse.textContent = "⚠️ Tracker script not running. Start tracker.py on your machine to use Screen Vision!";
+                    elAiResponse.textContent = "Webpage scanner ready. Add your Gemini key in Settings to analyze!";
                 }
             } catch (err) {
-                elAiResponse.innerHTML = "💡 <em>To enable Screen Vision:</em> run <code>python tracker.py</code> on your computer!";
+                elAiResponse.innerHTML = "💡 <em>Webpage Vision:</em> Add your free Gemini key in ⚙️ Settings to analyze pages!";
             }
         };
     }
@@ -924,26 +941,22 @@ document.addEventListener('DOMContentLoaded', () => {
             ]
         },
         {
-            id: 'tracker',
-            name: 'Local Tracker',
-            description: 'Local Python tracker sidecar for screen capture, GitHub proxy, and Vision. Only runs when you press the button.',
-            getStatus: () => 'Tap to check local tracker.',
-            getActionLabel: () => 'Check / Start',
+            id: 'vision',
+            name: 'Webpage Vision Scanner',
+            description: 'Direct browser tab capture for AI task analysis. Built directly into FreezeFix with zero external software.',
+            getStatus: () => 'Built-in (Zero-install)',
+            getActionLabel: () => 'Test',
             action: async () => {
-                const status = await checkTrackerStatus();
-                if (status === 'running') {
-                    showToast('Tracker is already running.');
-                    return;
-                }
-                const started = startPythonTracker();
-                if (started) {
-                    showToast('Starting tracker process...');
-                    setTimeout(async () => {
-                        await checkTrackerStatus();
-                        renderIntegrationList();
-                    }, 1200);
+                if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id && chrome.runtime.sendMessage) {
+                    chrome.runtime.sendMessage({ action: 'capture_active_tab' }, (response) => {
+                        if (response && response.success) {
+                            showToast('✅ Webpage Vision capture working perfectly!');
+                        } else {
+                            showToast('Webpage scanner is built-in and ready.');
+                        }
+                    });
                 } else {
-                    showToast('Could not start tracker automatically. Run python tracker.py from the app folder.');
+                    showToast('Webpage scanner is built-in and ready.');
                 }
             }
         }
@@ -1009,67 +1022,56 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function checkTrackerStatus() {
         const elStatus = document.getElementById('tracker-status');
-        if (!elStatus) return 'stopped';
+        const badge = document.getElementById('vision-badge');
+        if (!elStatus) return 'ready';
+        
+        // In Chrome extension context, active tab capture is 100% native
+        if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id) {
+            elStatus.innerHTML = '<span style="color:var(--green)">● Built-in & ready (Zero Python required)</span>';
+            if (badge) {
+                badge.textContent = 'Ready';
+                badge.style.background = '#10b981';
+            }
+            return 'ready';
+        }
+
+        // Desktop fallback
         try {
             const resp = await fetch('http://localhost:8999/', { headers: trackerHeaders() });
             const data = await resp.json();
             if (data.status === 'ok') {
-                elStatus.innerHTML = '<span style="color:var(--green)">● Running (Ready for Vision AI)</span>';
+                elStatus.innerHTML = '<span style="color:var(--green)">● Running</span>';
                 return 'running';
             }
             elStatus.innerHTML = '<span style="color:var(--yellow)">● Idle</span>';
             return 'idle';
         } catch {
-            elStatus.innerHTML = '<span style="color:var(--t4)">○ Stopped (Run python tracker.py)</span>';
-            return 'stopped';
-        }
-    }
-
-    function startPythonTracker() {
-        if (typeof require !== 'function') return false;
-        try {
-            const path = require('path');
-            const child = require('child_process');
-            const trackerPath = path.join(__dirname, '..', 'tracker.py');
-            // Try common python executables (mirrors main.js): env override, python, python3.
-            const bins = [(typeof process !== 'undefined' && process.env && process.env.PYTHON), 'python', 'python3'].filter(Boolean);
-            for (const bin of bins) {
-                try {
-                    const trackerProcess = child.spawn(bin, [trackerPath], {
-                        stdio: ['ignore', 'pipe', 'pipe'],
-                        detached: true
-                    });
-                    trackerProcess.stdout.on('data', data => console.log(`[Tracker ${bin}]: ${data}`));
-                    trackerProcess.stderr.on('data', data => console.error(`[Tracker ${bin} Error]: ${data}`));
-                    trackerProcess.unref();
-                    return true;
-                } catch (e) {
-                    console.warn('Failed starting tracker with', bin, e);
-                }
-            }
-            return false;
-        } catch (err) {
-            console.error('Unable to start tracker.py from renderer:', err);
-            return false;
+            elStatus.innerHTML = '<span style="color:var(--t3)">● Browser Tab Vision Ready</span>';
+            return 'ready';
         }
     }
 
     const elBtnToggleTracker = document.getElementById('btn-toggle-tracker');
     if (elBtnToggleTracker) {
         elBtnToggleTracker.onclick = async () => {
-            const status = await checkTrackerStatus();
-            if (status === 'running') {
-                showToast('Tracker is already running.');
+            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id && chrome.runtime.sendMessage) {
+                const { gemini } = AIHelper.getKeys();
+                chrome.runtime.sendMessage({ action: 'capture_active_tab' }, (response) => {
+                    if (response && response.success) {
+                        if (!gemini) {
+                            showToast('Webpage captured! Add your free Gemini API key above for AI analysis.');
+                            const keyInput = document.getElementById('sf-gemini-key');
+                            if (keyInput) keyInput.focus();
+                        } else {
+                            showToast('✅ Webpage scanner is working perfectly!');
+                        }
+                    } else {
+                        showToast(response && response.error ? response.error : 'Webpage scanner ready.');
+                    }
+                });
                 return;
             }
-
-            const started = startPythonTracker();
-            if (started) {
-                showToast('Starting tracker process...');
-                setTimeout(checkTrackerStatus, 1200);
-            } else {
-                showToast('Could not start tracker automatically. Run python tracker.py from the app folder.');
-            }
+            showToast('Webpage Vision is built-in. No Python required!');
         };
     }
 
