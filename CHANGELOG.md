@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.8] — 2026-11-08
+
+### Fixed & Enhanced
+- **Anti-Preachy Tone & High User Agency**: Overhauled vision prompt engineering and coaching models to completely eliminate patronizing and preachy lecturing (e.g. telling users to "close the tab", "minimize the window", or "look away for 10 minutes").
+- **On-Page Contextual Action Extraction**: Webpage vision analysis now directly assists with the content visible on screen (e.g. on LinkedIn: reviewing post impression metrics, replying to pending invites, checking messages; on dashboards: clicking specific buttons, checking tables, dismissing banners).
+- **Accurate Action Durations**: Enforced realistic 1-5 minute bounds matching the actual physical or UI micro-steps.
+
 ## [1.1.7] — 2026-11-08
 
 ### Fixed
