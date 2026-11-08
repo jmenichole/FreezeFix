@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Privacy Policy — FreezeFix</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  </style>
+</head>
+<body class="bg-zinc-900 text-zinc-100 antialiased leading-relaxed min-h-screen flex flex-col">
+  <header class="max-w-4xl mx-auto p-6 w-full flex items-center justify-between border-b border-zinc-800">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-violet-500 to-teal-400 flex items-center justify-center font-bold text-white text-lg">
+        FF
+      </div>
+      <div>
+        <h1 class="text-xl font-bold">FreezeFix</h1>
+        <p class="text-xs text-zinc-400">Privacy Policy</p>
+      </div>
+    </div>
+    <nav class="flex gap-4 text-sm">
+      <a href="index.html" class="text-zinc-300 hover:text-white">Home</a>
+      <a href="https://github.com/jmenichole/FreezeFix" target="_blank" class="text-zinc-300 hover:text-white">GitHub</a>
+    </nav>
+  </header>
+
+  <main class="max-w-4xl mx-auto px-6 py-12 flex-1 w-full space-y-8">
+    <div>
+      <h2 class="text-3xl font-extrabold text-white tracking-tight">Privacy Policy for FreezeFix</h2>
+      <p class="text-sm text-zinc-400 mt-2">Effective Date: November 8, 2026 | Last Updated: November 8, 2026</p>
+    </div>
+
+    <section class="space-y-4 text-zinc-300">
+      <h3 class="text-xl font-semibold text-white">1. Core Privacy Philosophy</h3>
+      <p>
+        FreezeFix is designed from the ground up to respect user privacy and executive function. We believe your productivity data, task lists, and focus patterns belong strictly to you. FreezeFix does <strong>not</strong> operate user tracking, does <strong>not</strong> run ads, does <strong>not</strong> collect analytics telemetry, and does <strong>not</strong> sell any personal data.
+      </p>
+    </section>
+
+    <section class="space-y-4 text-zinc-300">
+      <h3 class="text-xl font-semibold text-white">2. What Data Is Collected and Where It Is Stored</h3>
+      <ul class="list-disc pl-5 space-y-2">
+        <li>
+          <strong>Tasks and Settings:</strong> All tasks, categories, durations, focus timer presets, and customization options are stored <strong>strictly locally</strong> on your device using your browser's local storage (<code class="bg-zinc-800 px-1 py-0.5 rounded text-violet-300">chrome.storage.local</code> or browser <code class="bg-zinc-800 px-1 py-0.5 rounded text-violet-300">localStorage</code>). No tasks are ever sent to an external FreezeFix server.
+        </li>
+        <li>
+          <strong>Calendar Files (.ics):</strong> If you import a Google Calendar <code class="bg-zinc-800 px-1 py-0.5 rounded">.ics</code> file, it is parsed locally in your browser memory. We never upload your calendar files to external servers.
+        </li>
+      </ul>
+    </section>
+
+    <section class="space-y-4 text-zinc-300">
+      <h3 class="text-xl font-semibold text-white">3. Artificial Intelligence & API Keys (BYOK)</h3>
+      <p>
+        FreezeFix offers optional AI features (such as "Magic Breakdown" and "What next?" suggestions):
+      </p>
+      <ul class="list-disc pl-5 space-y-2">
+        <li>
+          <strong>Built-In Offline Fallback:</strong> FreezeFix includes local rule-based heuristics that operate 100% offline with zero network requests.
+        </li>
+        <li>
+          <strong>Direct API Connections:</strong> If you choose to connect an AI provider (e.g., Google Gemini or Groq), you provide your own API key. The extension communicates directly with that provider over an encrypted HTTPS connection. FreezeFix has no intermediate proxy server and never sees or stores your API keys outside your device's local storage.
+        </li>
+      </ul>
+    </section>
+
+    <section class="space-y-4 text-zinc-300">
+      <h3 class="text-xl font-semibold text-white">4. Screen & Tab Capture Permissions</h3>
+      <p>
+        The Chrome extension requests the <code class="bg-zinc-800 px-1 py-0.5 rounded text-violet-300">activeTab</code> permission solely for the user-triggered "📸 Scan Screen" feature:
+      </p>
+      <ul class="list-disc pl-5 space-y-2">
+        <li>Screen snapshots are captured <strong>only</strong> when you explicitly click the Scan button or use the keyboard shortcut.</li>
+        <li>Snapshots are sent directly to your configured AI vision provider for real-time analysis and are discarded immediately after processing. They are never retained, logged, or shared with third parties.</li>
+      </ul>
+    </section>
+
+    <section class="space-y-4 text-zinc-300">
+      <h3 class="text-xl font-semibold text-white">5. Children's Privacy</h3>
+      <p>
+        FreezeFix does not knowingly collect or solicit personal data from children under the age of 13. Because all data is stored locally on the user's device, no personal identifiers are collected.
+      </p>
+    </section>
+
+    <section class="space-y-4 text-zinc-300">
+      <h3 class="text-xl font-semibold text-white">6. Changes to This Policy</h3>
+      <p>
+        If we update this Privacy Policy, changes will be posted to this page and documented in our open-source GitHub repository changelog.
+      </p>
+    </section>
+
+    <section class="space-y-4 text-zinc-300">
+      <h3 class="text-xl font-semibold text-white">7. Contact Information</h3>
+      <p>
+        If you have any questions or feedback regarding this Privacy Policy, please reach out via:
+      </p>
+      <ul class="list-disc pl-5 space-y-1">
+        <li>Email: <a href="mailto:j.chapman7@yahoo.com" class="text-violet-400 hover:underline">j.chapman7@yahoo.com</a></li>
+        <li>GitHub Issues: <a href="https://github.com/jmenichole/FreezeFix/issues" target="_blank" class="text-violet-400 hover:underline">https://github.com/jmenichole/FreezeFix/issues</a></li>
+      </ul>
+    </section>
+  </main>
+
+  <footer class="max-w-4xl mx-auto p-6 w-full border-t border-zinc-800 text-xs text-zinc-500 flex justify-between">
+    <span>© 2026 FreezeFix by jmenichole</span>
+    <a href="https://github.com/jmenichole/FreezeFix" target="_blank" class="hover:text-zinc-300">Open Source on GitHub</a>
+  </footer>
+</body>
+</html>

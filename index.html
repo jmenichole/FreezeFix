@@ -17,7 +17,7 @@
     <meta name="description" content="Your always-visible ADHD productivity widget with smart time-blocking, task breakdown, and AI suggestions.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -442,7 +442,19 @@
         </div>
 
         <div class="settings-section">
-            <h4>🎨 Experience</h4>
+            <h4>🎨 Experience & Accessibility</h4>
+            <div class="form-group">
+                <label for="sf-theme-mode">Appearance Theme</label>
+                <select id="sf-theme-mode">
+                    <option value="auto" selected>System Default (Auto Light / Dark)</option>
+                    <option value="dark">Dark Neon Glass</option>
+                    <option value="light">Crisp Light Mode</option>
+                </select>
+                <div class="settings-hint">Automatically mirrors your browser/OS theme, or lock it to dark/light.</div>
+            </div>
+            <div class="form-group checkbox-group">
+                <label><input id="sf-font-legible" type="checkbox"> High-legibility font (Atkinson Hyperlegible for ADHD/dyslexia)</label>
+            </div>
             <div class="form-group checkbox-group">
                 <label><input id="sf-animations" type="checkbox" checked> Enable celebration animations</label>
             </div>

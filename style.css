@@ -1077,3 +1077,126 @@ input,select,textarea { font-family:inherit; font-size:inherit; }
     margin: 10px auto !important;
   }
 }
+
+
+/* ── Adaptive System Light / Dark Theme & Legible Font ─── */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #f8fafc;
+    --glass: rgba(255, 255, 255, 0.9);
+    --glass-hov: #ffffff;
+    --glass-b: rgba(203, 213, 225, 0.75);
+    --glass-b-hov: rgba(148, 163, 184, 0.9);
+    --t1: #0f172a;
+    --t2: #334155;
+    --t3: #64748b;
+    --t4: #94a3b8;
+    --purple-d: rgba(139, 92, 246, 0.12);
+    --teal-d: rgba(6, 182, 212, 0.12);
+    --pink-d: rgba(244, 63, 94, 0.12);
+    --green-d: rgba(16, 185, 129, 0.12);
+  }
+}
+
+:root[data-theme="light"] {
+  --bg: #f8fafc;
+  --glass: rgba(255, 255, 255, 0.9);
+  --glass-hov: #ffffff;
+  --glass-b: rgba(203, 213, 225, 0.75);
+  --glass-b-hov: rgba(148, 163, 184, 0.9);
+  --t1: #0f172a;
+  --t2: #334155;
+  --t3: #64748b;
+  --t4: #94a3b8;
+  --purple-d: rgba(139, 92, 246, 0.12);
+  --teal-d: rgba(6, 182, 212, 0.12);
+  --pink-d: rgba(244, 63, 94, 0.12);
+  --green-d: rgba(16, 185, 129, 0.12);
+}
+
+:root[data-theme="light"] #bg-orbs,
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) #bg-orbs {
+    opacity: 0.15;
+  }
+}
+
+:root[data-theme="light"] .panel,
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .panel {
+    background: #ffffff;
+    box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+    border-color: rgba(226, 232, 240, 0.9);
+  }
+}
+
+:root[data-theme="light"] .modal-overlay,
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .modal-overlay {
+    background: rgba(15, 23, 42, 0.45);
+  }
+}
+
+:root[data-theme="light"] .modal-box,
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .modal-box {
+    background: #ffffff;
+    border-color: #cbd5e1;
+    color: #0f172a;
+  }
+}
+
+:root[data-theme="light"] input,
+:root[data-theme="light"] select,
+:root[data-theme="light"] textarea,
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) input,
+  :root:not([data-theme="dark"]) select,
+  :root:not([data-theme="dark"]) textarea {
+    background: #f1f5f9;
+    color: #0f172a;
+    border-color: #cbd5e1;
+  }
+}
+
+:root[data-theme="light"] .chip,
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .chip {
+    background: #f1f5f9;
+    color: #475569;
+    border-color: #cbd5e1;
+  }
+  :root:not([data-theme="dark"]) .chip.active {
+    background: rgba(139, 92, 246, 0.15);
+    color: #6d28d9;
+    border-color: #8b5cf6;
+  }
+}
+
+:root[data-theme="light"] .task-item,
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .task-item {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+  :root:not([data-theme="dark"]) .task-item:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+  }
+}
+
+:root[data-theme="light"] .toast,
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) .toast {
+    background: #0f172a;
+    color: #f8fafc;
+  }
+}
+
+/* ── High-Legibility Font (Atkinson Hyperlegible for ADHD / Dyslexia) ── */
+body.font-legible,
+body.font-legible * {
+  font-family: 'Atkinson Hyperlegible', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  letter-spacing: 0.015em;
+}

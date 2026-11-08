@@ -660,16 +660,18 @@ document.addEventListener('DOMContentLoaded', () => {
             elAiResponse.textContent = "📸 Snapping screen & analyzing with Vision AI...";
 
             // Chrome Extension native tab capture (zero-install, zero-python)
-            if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.captureVisibleTab) {
-                chrome.tabs.captureVisibleTab(null, { format: 'jpeg', quality: 75 }, async (dataUrl) => {
+            if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.id && chrome.runtime.sendMessage) {
+                chrome.runtime.sendMessage({ action: 'capture_active_tab' }, async (response) => {
                     if (chrome.runtime && chrome.runtime.lastError) {
-                        elAiResponse.textContent = "⚠️ Could not capture active tab: " + chrome.runtime.lastError.message;
+                        elAiResponse.textContent = "⚠️ Tab capture note: " + chrome.runtime.lastError.message;
                         return;
                     }
-                    if (dataUrl) {
-                        const b64 = dataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
+                    if (response && response.success && response.dataUrl) {
+                        const b64 = response.dataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
                         const analysis = await AIHelper.analyzeScreenImage(b64);
                         elAiResponse.innerHTML = `<strong>📸 Active Tab Analysis:</strong><br>` + escapeHtml(analysis).replace(/\n/g, '<br>');
+                    } else if (response && response.error) {
+                        elAiResponse.textContent = "⚠️ Tab capture: " + response.error;
                     }
                 });
                 return;
