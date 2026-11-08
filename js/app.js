@@ -313,9 +313,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const pending = TaskManager.getPending().filter(t => !skippedIds.has(t.id));
         currentFocusTask = Scheduler.getCurrentTask(pending);
 
+        const elSubCont = document.getElementById('now-substep-container');
+        const elSubBadge = document.getElementById('now-substep-badge');
+        const elSubTime = document.getElementById('now-substep-time');
+        const elSubText = document.getElementById('now-substep-text');
+        const elSubFill = document.getElementById('now-substep-fill');
+
         if (!currentFocusTask) {
             elNextName.textContent = "🎉 All done! Ready for a break or a new task.";
             elNextMeta.textContent = "";
+            if (elSubCont) elSubCont.classList.add('hidden');
             const elBtnNowBreakdown = document.getElementById('btn-now-breakdown');
             if (elBtnStartFocus) elBtnStartFocus.style.display = "none";
             if (elBtnNowBreakdown) elBtnNowBreakdown.style.display = "none";
@@ -326,6 +333,23 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         elNextName.textContent = currentFocusTask.name;
+
+        // Render micro-step gamified progress
+        if (currentFocusTask.subtasks && currentFocusTask.subtasks.length > 0) {
+            const subs = currentFocusTask.subtasks;
+            const activeIdx = subs.findIndex(s => !s.done);
+            const currentSub = activeIdx >= 0 ? subs[activeIdx] : subs[0];
+            const currentNum = (activeIdx >= 0 ? activeIdx : 0) + 1;
+            const pct = Math.round((currentNum / subs.length) * 100);
+
+            if (elSubBadge) elSubBadge.textContent = `🧩 Step ${currentNum} of ${subs.length}`;
+            if (elSubTime) elSubTime.textContent = `⏱ ${currentSub.duration || 5}m`;
+            if (elSubText) elSubText.textContent = currentSub.name || '';
+            if (elSubFill) elSubFill.style.width = `${pct}%`;
+            if (elSubCont) elSubCont.classList.remove('hidden');
+        } else {
+            if (elSubCont) elSubCont.classList.add('hidden');
+        }
         const catInfo = TaskManager.CATEGORIES[currentFocusTask.category] || TaskManager.CATEGORIES.other;
         elNextMeta.textContent = `${catInfo.icon} ${catInfo.label} • ⏱ ${currentFocusTask.duration} minutes`;
 
@@ -354,9 +378,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ── Stats Bar ──
     function renderStats() {
-        if (elStreakNum) elStreakNum.textContent = HistoryManager.getStreak();
-        if (elDoneToday) elDoneToday.textContent = HistoryManager.getCompletedToday();
-        if (elTasksLeft) elTasksLeft.textContent = TaskManager.getPending().length;
+        const streak = HistoryManager.getStreak();
+        const doneToday = HistoryManager.getCompletedToday();
+        const pendingCount = TaskManager.getPending().length;
+
+        if (elStreakNum) elStreakNum.textContent = streak;
+        if (elDoneToday) elDoneToday.textContent = doneToday;
+        if (elTasksLeft) elTasksLeft.textContent = pendingCount;
+
+        const elFocusStreak = document.getElementById('focus-streak-count');
+        const elFocusDone = document.getElementById('focus-done-count');
+        const elFocusLeft = document.getElementById('focus-left-count');
+        if (elFocusStreak) elFocusStreak.textContent = streak;
+        if (elFocusDone) elFocusDone.textContent = doneToday;
+        if (elFocusLeft) elFocusLeft.textContent = pendingCount;
     }
 
     // ── Global Actions ──
@@ -550,13 +585,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function startTimer() {
         if (isTimerRunning) return;
         isTimerRunning = true;
-        elBtnTimerToggle.textContent = '⏸';
+        elBtnTimerToggle.textContent = '⏸ Pause';
+        const ringCont = document.getElementById('timer-ring-container');
+        if (ringCont) ringCont.classList.add('timer-running');
         timerInterval = setInterval(() => {
             if (timerSecsLeft > 0) {
                 timerSecsLeft--;
                 updateTimerDisplay();
             } else {
                 pauseTimer();
+                playDopamineChime();
                 showToast('🔔 Time is up! Great work!');
             }
         }, 1000);
@@ -564,7 +602,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function pauseTimer() {
         isTimerRunning = false;
-        elBtnTimerToggle.textContent = '▶';
+        elBtnTimerToggle.textContent = '▶ Start Timer';
+        const ringCont = document.getElementById('timer-ring-container');
+        if (ringCont) ringCont.classList.remove('timer-running');
         clearInterval(timerInterval);
     }
 
@@ -867,7 +907,26 @@ document.addEventListener('DOMContentLoaded', () => {
         // Not running in Electron
     }
 
+    function playDopamineChime() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const now = ctx.currentTime;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(523.25, now);
+            osc.frequency.exponentialRampToValueAtTime(783.99, now + 0.12);
+            gain.gain.setValueAtTime(0.12, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.38);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.38);
+        } catch { /* Web Audio unavailable or muted */ }
+    }
+
     function triggerCelebration(taskName) {
+        playDopamineChime();
         const overlay = document.getElementById('celebration-overlay');
         const msg = document.getElementById('celebration-message');
         const container = document.getElementById('confetti-container');

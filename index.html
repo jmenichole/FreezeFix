@@ -72,6 +72,33 @@
             </div>
         </div>
 
+        <!-- 🔥 Gamified Dopamine & Streak Flow Banner -->
+        <div id="focus-streak-banner" class="focus-dopamine-banner">
+            <div class="dopamine-stat" title="Daily streak of completed tasks">
+                <span class="dopamine-icon">🔥</span>
+                <div class="dopamine-info">
+                    <span id="focus-streak-count" class="dopamine-num">0</span>
+                    <span class="dopamine-label">Streak</span>
+                </div>
+            </div>
+            <div class="dopamine-divider"></div>
+            <div class="dopamine-stat" title="Tasks completed today">
+                <span class="dopamine-icon">⚡</span>
+                <div class="dopamine-info">
+                    <span id="focus-done-count" class="dopamine-num">0</span>
+                    <span class="dopamine-label">Done Today</span>
+                </div>
+            </div>
+            <div class="dopamine-divider"></div>
+            <div class="dopamine-stat" title="Remaining focus queue">
+                <span class="dopamine-icon">🎯</span>
+                <div class="dopamine-info">
+                    <span id="focus-left-count" class="dopamine-num">0</span>
+                    <span class="dopamine-label">Queued</span>
+                </div>
+            </div>
+        </div>
+
         <!-- 🎯 NOW Card -->
         <div id="next-task-card" class="now-focus-card">
             <div class="now-badge-row">
@@ -79,6 +106,18 @@
                 <span id="next-task-meta" class="now-meta"></span>
             </div>
             <div id="next-task-name" class="now-task-title">Nothing queued — type a thought above!</div>
+
+            <!-- Dynamic Micro-Step Progress Indicator -->
+            <div id="now-substep-container" class="now-substep-container hidden">
+                <div class="substep-badge-row">
+                    <span id="now-substep-badge" class="substep-badge">🧩 Step 1 of 4</span>
+                    <span id="now-substep-time" class="substep-time">⏱ 5m</span>
+                </div>
+                <div id="now-substep-text" class="substep-text"></div>
+                <div class="substep-progress-track">
+                    <div id="now-substep-fill" class="substep-progress-fill" style="width: 25%"></div>
+                </div>
+            </div>
 
             <!-- Focus Ring Timer (embedded in Now Card for zero-context switching) -->
             <div id="timer-section" class="now-timer-section">
