@@ -49,6 +49,7 @@
         </div>
         <div class="top-tools">
             <button id="btn-header-history" class="tool-btn" title="Activity History">📊</button>
+            <button id="btn-header-changelog" class="tool-btn" title="What's New / Change Log">🚀</button>
             <button id="btn-header-help" class="tool-btn" title="Help & Guide">❓</button>
             <button id="btn-header-settings" class="tool-btn" title="Settings">⚙️</button>
             <a href="https://ko-fi.com/jmenichole7" target="_blank" class="tool-btn kofi-btn" title="Support on Ko-fi">☕</a>
@@ -585,8 +586,67 @@
             <p><strong>Energy & Action Plan</strong>: Set the Energy level to match how you feel now (High / Medium / Low). Use Action Plan to decide whether to Do, Delegate, or Delete a task quickly.</p>
             <p><strong>Webpage Vision Scanner</strong>: Click <em>📸 Scan Webpage</em> to instantly analyze what you are currently viewing in your browser. FreezeFix uses Google Gemini Vision AI to read the page and recommend your next micro-step. 100% built-in with zero software or Python required!</p>
             <p><strong>GitHub import</strong>: Removed from the UI to simplify the product. If you need GitHub imports later, they can be re-added as an explicit opt-in connector.</p>
+            <div style="margin-top:16px;text-align:center">
+                <button type="button" id="btn-open-changelog-from-help" class="btn btn-ghost btn-sm" style="border-color:#8b5cf6;color:#a78bfa">🚀 View Version Change Log & What's New</button>
+            </div>
             <hr style="opacity:.06;margin:12px 0">
             <p style="font-size:12px;color:var(--t3)">Tip: Add quick tasks with Brain Dump, then use <em>Break it Down</em> to turn intimidating tasks into tiny steps you can complete in short bursts.</p>
+        </div>
+    </div>
+</div>
+
+<!-- Change Log Modal -->
+<div id="modal-changelog" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="changelog-heading">
+    <div class="modal-box modal-wide">
+        <div class="modal-header">
+            <h3 id="changelog-heading">🚀 What's New in FreezeFix</h3>
+            <button class="modal-close" data-close="modal-changelog" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-body changelog-body">
+            <div class="changelog-version-card">
+                <div class="version-header">
+                    <span class="version-badge current">v1.1.2</span>
+                    <span class="version-tag">Latest</span>
+                    <span class="version-date">November 8, 2026</span>
+                </div>
+                <ul class="changelog-list">
+                    <li><strong>Gamified Dopamine Flow</strong>: Real-time streak (🔥), crushed tasks counter (⚡), and queued tasks chip (🎯) right in the main Focus view.</li>
+                    <li><strong>Electric Pulsing Timer</strong>: Cyan & violet ambient neon glow while focus timers are running.</li>
+                    <li><strong>Dynamic Micro-Step Stepper</strong>: Visual step counter (<code>Step 1 of N</code>) and animated gradient progress bar on the active task card.</li>
+                    <li><strong>Synthesized Web Audio Chime</strong>: Uplifting two-tone chime upon completing tasks or timers using standard browser Web Audio (zero sound files needed).</li>
+                    <li><strong>Gemini 3.8 Flash Upgrade</strong>: State-of-the-art AI engine with native JSON Schema output and fast fallback to Gemini 3.5 Flash-Lite.</li>
+                </ul>
+            </div>
+
+            <div class="changelog-version-card">
+                <div class="version-header">
+                    <span class="version-badge">v1.1.1</span>
+                    <span class="version-date">November 8, 2026</span>
+                </div>
+                <ul class="changelog-list">
+                    <li><strong>Chrome Web Store Compliance</strong>: Resolved Purple Potassium audit by removing unused permissions.</li>
+                    <li><strong>Sticky Brain Dump Bar</strong>: Quick-capture bar stays pinned at <code>top: 0</code> in narrow side panels.</li>
+                    <li><strong>100% Native Webpage Scanner</strong>: Decoupled Python sidecar; capture pages directly in the browser via <code>activeTab</code>.</li>
+                    <li><strong>Clinical ADHD Breakdown Heuristics</strong>: 20+ specialized real-world initiation templates with anti-corporate physical body actions.</li>
+                    <li><strong>Inline Step Editing</strong>: Delete (✕) or add (+ Add Step) sub-steps directly in Magic Breakdown.</li>
+                </ul>
+            </div>
+
+            <div class="changelog-version-card">
+                <div class="version-header">
+                    <span class="version-badge">v1.1.0</span>
+                    <span class="version-date">November 8, 2026</span>
+                </div>
+                <ul class="changelog-list">
+                    <li><strong>Manifest V3 Chrome Extension</strong>: Official Chrome side panel companion launch.</li>
+                    <li><strong>Day Flow Visual Timeline</strong>: Vertical hourly schedule with auto-rescheduling.</li>
+                    <li><strong>Focus Now Card</strong>: Single-task focus view to eliminate decision fatigue.</li>
+                </ul>
+            </div>
+        </div>
+        <div class="modal-footer" style="display:flex;justify-content:space-between;align-items:center">
+            <span style="font-size:11px;color:var(--t3)">Made with ❤️ for ADHD brains</span>
+            <button class="btn btn-primary btn-sm" data-close="modal-changelog">Awesome!</button>
         </div>
     </div>
 </div>

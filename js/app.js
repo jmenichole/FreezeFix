@@ -1487,6 +1487,22 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
+    const btnHeaderChangelog = document.getElementById('btn-header-changelog');
+    const elModalChangelog = document.getElementById('modal-changelog');
+    if (btnHeaderChangelog) {
+        btnHeaderChangelog.onclick = () => {
+            if (elModalChangelog) elModalChangelog.classList.remove('hidden');
+        };
+    }
+
+    const btnOpenChangelogHelp = document.getElementById('btn-open-changelog-from-help');
+    if (btnOpenChangelogHelp) {
+        btnOpenChangelogHelp.onclick = () => {
+            if (elModalHelp) elModalHelp.classList.add('hidden');
+            if (elModalChangelog) elModalChangelog.classList.remove('hidden');
+        };
+    }
+
     // ── Quick Duration Chips in Add Task Modal ──
     const durationChips = document.querySelectorAll('.duration-preset');
     const elTfDurationInput = document.getElementById('tf-duration');
