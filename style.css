@@ -1037,3 +1037,43 @@ input,select,textarea { font-family:inherit; font-size:inherit; }
 
 /* ── Scrollbars ────────────────────────────────────────── */
 * { scrollbar-width:thin; scrollbar-color:var(--glass-b) transparent; }
+
+/* ── Responsive & Chrome Side Panel Mode ───────────────── */
+@media (max-width: 850px) {
+  #app {
+    margin-left: 0 !important;
+    width: 100% !important;
+    grid-template-columns: 1fr !important;
+    height: 100vh !important;
+    overflow-y: auto !important;
+    padding: 8px !important;
+    gap: 10px !important;
+  }
+  
+  .panel {
+    border-radius: 14px !important;
+  }
+  
+  #panel-left, #panel-center {
+    width: 100% !important;
+    max-height: none !important;
+  }
+  
+  #timeline-scroll {
+    max-height: 240px !important;
+  }
+  
+  #clock-section {
+    padding: 8px var(--p) 6px !important;
+  }
+  
+  #clock {
+    font-size: 32px !important;
+  }
+
+  .modal-box {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    margin: 10px auto !important;
+  }
+}

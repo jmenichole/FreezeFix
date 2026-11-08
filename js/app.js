@@ -658,6 +658,23 @@ document.addEventListener('DOMContentLoaded', () => {
         elBtnScanScreen.onclick = async () => {
             elAiResponse.classList.remove('hidden');
             elAiResponse.textContent = "📸 Snapping screen & analyzing with Vision AI...";
+
+            // Chrome Extension native tab capture (zero-install, zero-python)
+            if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.captureVisibleTab) {
+                chrome.tabs.captureVisibleTab(null, { format: 'jpeg', quality: 75 }, async (dataUrl) => {
+                    if (chrome.runtime && chrome.runtime.lastError) {
+                        elAiResponse.textContent = "⚠️ Could not capture active tab: " + chrome.runtime.lastError.message;
+                        return;
+                    }
+                    if (dataUrl) {
+                        const b64 = dataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
+                        const analysis = await AIHelper.analyzeScreenImage(b64);
+                        elAiResponse.innerHTML = `<strong>📸 Active Tab Analysis:</strong><br>` + escapeHtml(analysis).replace(/\n/g, '<br>');
+                    }
+                });
+                return;
+            }
+
             try {
                 const resp = await fetch('http://localhost:8999/capture', { headers: trackerHeaders() });
                 const data = await resp.json();
@@ -1015,6 +1032,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const s = JSON.parse(localStorage.getItem('adhd_settings') || '{}');
         const app = document.getElementById('app');
         
+        // In narrow viewports (e.g. Chrome Side Panel) or mobile, force full width
+        if (window.innerWidth <= 850 && app) {
+            app.style.marginLeft = '0';
+            app.style.width = '100%';
+            return;
+        }
+
         // Apply width
         if (s.widgetWidth && app) {
             const w = s.widgetWidth;
