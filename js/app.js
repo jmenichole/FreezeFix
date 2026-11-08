@@ -778,6 +778,100 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    function renderVisionResult(result) {
+        if (!elAiResponse) return;
+
+        // If result is structured object with actions
+        if (result && typeof result === 'object' && Array.isArray(result.actions)) {
+            const contextText = escapeHtml(result.context || 'Active webpage analyzed:');
+            let actionsHtml = '';
+
+            result.actions.forEach((act) => {
+                const title = escapeHtml(act.title || 'Next micro-step');
+                const detail = escapeHtml(act.detail || '');
+                const dur = parseInt(act.duration, 10) || 5;
+                actionsHtml += `
+                    <div class="vision-action-card">
+                        <div class="vision-action-main">
+                            <div class="vision-action-title">👉 ${title}</div>
+                            ${detail ? `<div class="vision-action-detail">${detail}</div>` : ''}
+                            <span class="vision-action-dur">⏱ ${dur} mins</span>
+                        </div>
+                        <button class="btn btn-primary btn-sm btn-vision-adopt" data-name="${encodeURIComponent(act.title)}" data-dur="${dur}" title="Focus on this micro-step now">
+                            ⚡ Do This
+                        </button>
+                    </div>
+                `;
+            });
+
+            elAiResponse.innerHTML = `
+                <div class="vision-result-container">
+                    <div class="vision-result-header">
+                        <span class="vision-result-badge">📸 Page Context</span>
+                        <button id="btn-close-vision" class="icon-close-sm" title="Dismiss advice">✕</button>
+                    </div>
+                    <div class="vision-result-context">${contextText}</div>
+                    <div class="vision-actions-label">RECOMMENDED NEXT STEPS:</div>
+                    <div class="vision-actions-group">
+                        ${actionsHtml}
+                    </div>
+                </div>
+            `;
+
+            // Wire close button
+            const btnClose = document.getElementById('btn-close-vision');
+            if (btnClose) {
+                btnClose.onclick = () => {
+                    elAiResponse.classList.add('hidden');
+                    elAiResponse.innerHTML = '';
+                };
+            }
+
+            // Wire "⚡ Do This" buttons
+            elAiResponse.querySelectorAll('.btn-vision-adopt').forEach(btn => {
+                btn.onclick = () => {
+                    const taskName = decodeURIComponent(btn.dataset.name);
+                    const dur = parseInt(btn.dataset.dur, 10) || 5;
+                    const newTask = TaskManager.create({
+                        name: taskName,
+                        duration: dur,
+                        priority: 1,
+                        category: 'work',
+                        energy: 'medium'
+                    });
+                    currentFocusTask = newTask;
+                    setTimerMinutes(dur);
+                    startTimer();
+                    playDopamineChime();
+                    showToast(`Started: "${taskName}" 🎯`);
+                    elAiResponse.classList.add('hidden');
+                    renderAll();
+                };
+            });
+            return;
+        }
+
+        // Fallback for string / markdown output
+        const raw = typeof result === 'string' ? result : JSON.stringify(result);
+        const formatted = escapeHtml(raw)
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/^\s*\*\s*(.*)$/gm, '<li>$1</li>')
+            .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+            .replace(/\n\n+/g, '<br><br>');
+
+        elAiResponse.innerHTML = `
+            <div class="vision-result-container">
+                <div class="vision-result-header">
+                    <span class="vision-result-badge">📸 Analysis</span>
+                    <button id="btn-close-vision" class="icon-close-sm" title="Dismiss">✕</button>
+                </div>
+                <div class="vision-raw-text">${formatted}</div>
+            </div>
+        `;
+        const btnClose = document.getElementById('btn-close-vision');
+        if (btnClose) btnClose.onclick = () => elAiResponse.classList.add('hidden');
+    }
+
     const elBtnScanScreen = document.getElementById('btn-scan-screen');
     if (elBtnScanScreen) {
         elBtnScanScreen.onclick = async () => {
@@ -795,7 +889,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         try {
                             const b64 = response.dataUrl.replace(/^data:image\/[a-z]+;base64,/, '');
                             const analysis = await AIHelper.analyzeScreenImage(b64);
-                            elAiResponse.innerHTML = `<strong>📸 Active Tab Analysis:</strong><br>` + escapeHtml(analysis).replace(/\n/g, '<br>');
+                            renderVisionResult(analysis);
                         } catch (err) {
                             if (err && err.message === 'NO_GEMINI_KEY') {
                                 elAiResponse.innerHTML = `📸 <strong>Webpage captured!</strong> To analyze it with AI, paste your free Gemini API key in <a href="#" id="link-open-settings" style="color:var(--purple-l);text-decoration:underline">⚙️ Settings</a> (get one free at <a href="https://aistudio.google.com" target="_blank" style="color:var(--teal-l)">aistudio.google.com</a>).`;

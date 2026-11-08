@@ -15,7 +15,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // Explicitly target the last focused window so side panel capture succeeds
     chrome.windows.getLastFocused({ populate: false }, (win) => {
       const windowId = (win && typeof win.id === 'number') ? win.id : null;
-      chrome.tabs.captureVisibleTab(windowId, { format: 'jpeg', quality: 75 }, (dataUrl) => {
+      chrome.tabs.captureVisibleTab(windowId, { format: 'jpeg', quality: 50 }, (dataUrl) => {
         if (chrome.runtime.lastError || !dataUrl) {
           const errMsg = chrome.runtime.lastError ? chrome.runtime.lastError.message : 'Failed to capture tab';
           sendResponse({

@@ -203,15 +203,46 @@ RULES:
 
         const model = GEMINI_PRIMARY_MODEL;
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${gemini}`;
+        const promptText = `You are an ADHD executive dysfunction coach. Analyze this screenshot.
+1. Provide a one-sentence summary of the webpage/task the user is currently viewing.
+2. Extract 2-3 concrete, low-friction physical micro-actions they can take right now to make progress.
+Return JSON with this schema:
+{
+  "context": "Short summary of what is on screen",
+  "actions": [
+    { "title": "Specific action verb title", "detail": "One short sentence why or how", "duration": 3 }
+  ]
+}`;
+
         const payload = {
             contents: [{
                 parts: [
-                    { text: "Analyze this screen screenshot. What specific task, application, or project is the user currently viewing? Extract 1-3 immediate, low-friction, concrete physical micro-tasks for them to do right now to overcome initiation paralysis. Format as 2-3 warm, actionable bullet points." },
+                    { text: promptText },
                     { inline_data: { mime_type: "image/jpeg", data: b64Image } }
                 ]
             }],
             generationConfig: {
-                temperature: 0.4
+                response_mime_type: "application/json",
+                response_schema: {
+                    type: "OBJECT",
+                    properties: {
+                        context: { type: "STRING" },
+                        actions: {
+                            type: "ARRAY",
+                            items: {
+                                type: "OBJECT",
+                                properties: {
+                                    title: { type: "STRING" },
+                                    detail: { type: "STRING" },
+                                    duration: { type: "INTEGER" }
+                                },
+                                required: ["title", "duration"]
+                            }
+                        }
+                    },
+                    required: ["context", "actions"]
+                },
+                temperature: 0.3
             }
         };
 
@@ -233,7 +264,16 @@ RULES:
 
         if (!resp.ok) throw new Error(`GEMINI_VISION_ERROR_${resp.status}`);
         const data = await resp.json();
-        return data.candidates?.[0]?.content?.parts?.[0]?.text || 'No task identified from screen.';
+        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+        try {
+            return JSON.parse(rawText.trim());
+        } catch {
+            return {
+                context: rawText,
+                actions: []
+            };
+        }
     }
 
     return { getKeys, generateTaskBreakdown, suggestNextTask, analyzeScreenImage };
