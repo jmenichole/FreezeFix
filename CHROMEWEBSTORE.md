@@ -5,7 +5,8 @@
 **Version:** 1.1.0  
 **Category:** Productivity  
 **Privacy Policy URL:** https://jmenichole.github.io/FreezeFix/privacy.html  
-**Support URL:** https://github.com/jmenichole/FreezeFix/issues  
+**Support URL:** https://github.com/jmenichole/FreezeFix/issues
+**Ko-fi Creator Page:** https://ko-fi.com/jmenichole7  
 
 ---
 

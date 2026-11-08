@@ -1,4 +1,6 @@
-# FreezeFix — Desktop ADHD Productivity Widget
+# FreezeFix — Desktop & Browser ADHD Productivity Widget
+
+[![Support on Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20me-794bc4?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/jmenichole7)
 
 FreezeFix (formerly ADHD Flow Widget) is an always-visible desktop widget that helps users with ADHD get into flow: micro-task breakdowns, auto-scheduling, AI suggestions, streaks, and a lightweight background tracker.
 
@@ -113,3 +115,7 @@ To place this widget directly on your Windows desktop background (behind all ope
 2. Open Lively Wallpaper → click **+ Add Wallpaper**.
 3. Browse and select your `index.html` file (`adhd-widget/index.html`).
 4. Click **OK** — your widget is now your desktop background!
+
+
+## ☕ Support on Ko-fi
+Love FreezeFix? Support continued development or leave a tip on [Ko-fi.com/jmenichole7](https://ko-fi.com/jmenichole7)!
