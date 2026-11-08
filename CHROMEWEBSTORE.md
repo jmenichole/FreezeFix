@@ -66,8 +66,7 @@ Copy and paste these exact justifications into the Chrome Developer Dashboard:
 | Permission | Reviewer Justification |
 | :--- | :--- |
 | **`sidePanel`** | Required to display the FreezeFix companion interface docked alongside the user's active browsing session in Chrome's native side panel, providing continuous executive function guidance without context switching. |
-| **`storage`** | Required to persist user task lists, category labels, timer history, theme preferences, and optional user-provided API keys locally on the device. |
-| **`activeTab`** | Required solely when the user explicitly clicks the "Scan Screen" button or triggers the shortcut to capture the visible area of their current tab for AI-assisted task breakdown and summarization. |
+| **`activeTab`** | Required solely when the user explicitly clicks the "Scan Webpage" / "Scan Screen" button to capture the visible area of their active tab for AI-assisted task breakdown and distraction-free work summarization. |
 
 ---
 
@@ -89,3 +88,14 @@ When filling out the **Privacy** tab in the Developer Dashboard:
 - [x] **Toolbar Icons**: 16×16, 32×32, 48×48 PNGs in `icons/`
 - [ ] **Store Screenshot**: At least one 1280×800 (or 640×400) PNG screenshot of the FreezeFix side panel open next to a webpage.
 - [ ] **Small Promo Tile (Optional)**: 440×280 PNG.
+
+---
+
+## 6. Version History & Review Notes
+
+### v1.1.1 (November 8, 2026) — Reviewer Rectification (Purple Potassium)
+- **Resolved Excessive Permissions Flag:** Removed `"storage"` permission from `manifest.json`. All user task lists, timer state, and user preferences are persisted exclusively via standard origin-isolated `localStorage` without requiring elevated Chrome storage permissions.
+- **Audited Remaining Permissions:** The extension now requests only **2 minimal permissions**:
+  1. `sidePanel`: Required for Chrome's native side panel UI (`index.html`).
+  2. `activeTab`: Invoked on-demand only when the user clicks "Scan Webpage" to capture their active tab.
+- **Enhanced Clinical UX:** Fixed Brain Dump sticky positioning and one-click micro-task capture based on clinical ADHD executive dysfunction research (PMC12289795 & OT4ADHD).

@@ -8,7 +8,7 @@
 FreezeFix does **not** collect user tracking data, run advertisements, or sell personal information. All task management and scheduling data is stored strictly locally on your machine or browser.
 
 ## 2. What Data We Store
-- **Tasks & Schedules:** Stored exclusively on your device using `chrome.storage.local` (for the browser extension) or `localStorage` (for the desktop app).
+- **Tasks & Schedules:** Stored exclusively on your device using standard local web storage (`localStorage`). No tasks or focus data ever leave your machine.
 - **Settings & API Keys:** Stored locally in your browser storage. We have no external servers collecting or storing your keys.
 - **Calendar Files (.ics):** Parsed locally in client memory; never sent to external servers.
 

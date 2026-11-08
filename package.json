@@ -1,7 +1,7 @@
 {
   "name": "freezefix",
-  "version": "1.1.0",
-  "description": "FreezeFix — Desktop ADHD productivity widget with AI companion",
+  "version": "1.1.1",
+  "description": "FreezeFix \u2014 Desktop ADHD productivity widget with AI companion",
   "main": "main.js",
   "scripts": {
     "start": "electron .",
