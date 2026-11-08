@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.7] — 2026-11-08
+
+### Fixed
+- **Gemini Vision 404 Resolution**: Fixed the `GEMINI_VISION_ERROR_404` error by updating the model priority waterfall to use Google's current high-throughput multimodal models (`gemini-3.5-flash-lite` and `gemini-3.8-flash`, with `gemini-2.0-flash` and `gemini-1.5-flash` fallbacks).
+- **REST Protocol Conformance**: Standardized the image part payload to camelCase `inlineData` with `mimeType` matching Google v1beta REST specification.
+- **Dynamic Working Model Discovery & Caching**: Added automatic fallback traversal across candidate models so if any specific model is restricted or unavailable on a user's key, the next model is tried transparently, and the working model is cached for instant future calls.
+- **User-Friendly Vision Error Handling**: Replaced raw technical error codes with empathetic, actionable guidance cards (e.g. invalid key, timeout, or model status).
+
 ## [1.1.6] — 2026-11-08
 
 ### Fixed & Optimized

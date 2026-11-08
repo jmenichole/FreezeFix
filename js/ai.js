@@ -8,13 +8,30 @@
  * This software is proprietary and confidential.
  */
 
-/* js/ai.js — High-Speed Gemini & Groq API Integration & Instant Local Heuristics */
+/* js/ai.js — High-Speed Resilient Gemini & Groq Integration & Instant Heuristics */
 'use strict';
 
 const AIHelper = (() => {
-    // Official high-speed models with sub-second execution
-    const GEMINI_PRIMARY_MODEL = 'gemini-2.5-flash';
-    const GEMINI_FALLBACK_MODEL = 'gemini-2.5-flash-lite';
+    // Official Google Gemini model priority waterfall:
+    // 1. gemini-3.5-flash-lite: lowest latency, high throughput, strong multimodal
+    // 2. gemini-3.8-flash: intelligent flash model with deep reasoning
+    // 3. gemini-2.0-flash: broad compatibility fallback
+    // 4. gemini-1.5-flash: long-term stable fallback
+    const GEMINI_MODELS = [
+        'gemini-3.5-flash-lite',
+        'gemini-3.8-flash',
+        'gemini-2.0-flash',
+        'gemini-1.5-flash'
+    ];
+
+    let cachedWorkingModel = null;
+
+    function getCandidateModels() {
+        if (cachedWorkingModel && GEMINI_MODELS.includes(cachedWorkingModel)) {
+            return [cachedWorkingModel, ...GEMINI_MODELS.filter(m => m !== cachedWorkingModel)];
+        }
+        return GEMINI_MODELS;
+    }
 
     function getKeys() {
         try {
@@ -28,8 +45,8 @@ const AIHelper = (() => {
         }
     }
 
-    // Resilient fetch wrapper with strict timeout to eliminate UI hanging
-    async function fetchWithTimeout(url, options = {}, timeoutMs = 4500) {
+    // Resilient fetch wrapper with strict timeout to prevent interface blocking
+    async function fetchWithTimeout(url, options = {}, timeoutMs = 5000) {
         const controller = new AbortController();
         const timerId = setTimeout(() => controller.abort(), timeoutMs);
         try {
@@ -72,9 +89,6 @@ const AIHelper = (() => {
         const { gemini } = getKeys();
         if (!gemini) throw new Error('NO_GEMINI_KEY');
 
-        const model = options.model || GEMINI_PRIMARY_MODEL;
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${gemini}`;
-
         const payload = {
             contents: [{
                 parts: [{ text: prompt }]
@@ -95,49 +109,43 @@ const AIHelper = (() => {
         if (typeof options.temperature === 'number') {
             genConfig.temperature = options.temperature;
         }
-
         if (Object.keys(genConfig).length > 0) {
             payload.generationConfig = genConfig;
         }
 
         const timeoutMs = options.timeoutMs || 4500;
-        let resp;
+        const models = options.model ? [options.model] : getCandidateModels();
 
-        try {
-            resp = await fetchWithTimeout(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            }, timeoutMs);
-        } catch (fetchErr) {
-            // If primary model timed out or had network issue, try fallback fast model
-            if (model === GEMINI_PRIMARY_MODEL) {
-                console.warn(`Gemini primary model failed (${fetchErr.message}), trying fast fallback ${GEMINI_FALLBACK_MODEL}...`);
-                const fallbackUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_FALLBACK_MODEL}:generateContent?key=${gemini}`;
-                resp = await fetchWithTimeout(fallbackUrl, {
+        let lastStatus = 0;
+        for (const model of models) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${gemini}`;
+            try {
+                const resp = await fetchWithTimeout(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
-                }, 3500);
-            } else {
-                throw fetchErr;
+                }, timeoutMs);
+
+                if (resp.ok) {
+                    cachedWorkingModel = model;
+                    const data = await resp.json();
+                    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                }
+
+                lastStatus = resp.status;
+                if (resp.status === 401 || resp.status === 403) {
+                    throw new Error(`GEMINI_AUTH_ERROR_${resp.status}`);
+                }
+                console.warn(`Gemini text model ${model} returned ${resp.status}, trying next fallback...`);
+            } catch (err) {
+                if (err.message && err.message.startsWith('GEMINI_AUTH_ERROR')) {
+                    throw err;
+                }
+                console.warn(`Gemini text model ${model} failed (${err.message}), trying next fallback...`);
             }
         }
 
-        // If primary model hits error status code, retry once with fast lite model
-        if (!resp.ok && model === GEMINI_PRIMARY_MODEL && resp.status !== 400 && resp.status !== 401 && resp.status !== 403) {
-            console.warn(`Gemini primary returned ${resp.status}, trying fallback ${GEMINI_FALLBACK_MODEL}...`);
-            const fallbackUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_FALLBACK_MODEL}:generateContent?key=${gemini}`;
-            resp = await fetchWithTimeout(fallbackUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            }, 3500);
-        }
-
-        if (!resp.ok) throw new Error(`GEMINI_ERROR_${resp.status}`);
-        const data = await resp.json();
-        return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        throw new Error(`GEMINI_ERROR_${lastStatus || 404}`);
     }
 
     async function callAI(prompt, options = {}) {
@@ -146,12 +154,12 @@ const AIHelper = (() => {
             throw new Error('NO_API_KEYS');
         }
 
-        // Prefer Gemini for structured output requests when available
+        // Try Gemini models first
         if (gemini) {
             try {
                 return await callGemini(prompt, options);
             } catch (err) {
-                console.warn('Gemini call failed or timed out:', err.message);
+                console.warn('Gemini text call failed:', err.message);
                 if (!groq) throw err;
             }
         }
@@ -161,7 +169,7 @@ const AIHelper = (() => {
             try {
                 return await callGroq(prompt, options);
             } catch (err) {
-                console.warn('Groq call failed or timed out:', err.message);
+                console.warn('Groq call failed:', err.message);
                 throw err;
             }
         }
@@ -379,7 +387,7 @@ RULES:
                 timeoutMs: 4000
             });
 
-            // If response is valid JSON (structured mode), parse directly
+            // Parse response
             try {
                 const parsed = JSON.parse(resultText.trim());
                 if (Array.isArray(parsed) && parsed.length > 0) {
@@ -389,7 +397,6 @@ RULES:
                     })).filter(s => s.name.length > 0);
                 }
             } catch {
-                // If text output from Groq/unstructured fallback, extract array via regex
                 const match = resultText.match(/\[\s*\{[\s\S]*\}\s*\]/);
                 if (match) {
                     const steps = JSON.parse(match[0]);
@@ -430,8 +437,6 @@ RULES:
             throw new Error('NO_GEMINI_KEY');
         }
 
-        const model = GEMINI_PRIMARY_MODEL;
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${gemini}`;
         const promptText = `You are an ADHD executive dysfunction coach. Analyze this webpage screenshot.
 1. Provide a one-sentence summary of what the user is currently viewing.
 2. Extract 2-3 concrete, low-friction physical micro-actions they can take right now to make progress.
@@ -443,11 +448,17 @@ Return JSON with this schema:
   ]
 }`;
 
+        // Standard Google v1beta inlineData structure (camelCase)
         const payload = {
             contents: [{
                 parts: [
-                    { text: promptText },
-                    { inline_data: { mime_type: "image/jpeg", data: b64Image } }
+                    {
+                        inlineData: {
+                            mimeType: "image/jpeg",
+                            data: b64Image
+                        }
+                    },
+                    { text: promptText }
                 ]
             }],
             generationConfig: {
@@ -475,45 +486,44 @@ Return JSON with this schema:
             }
         };
 
-        let resp;
-        try {
-            resp = await fetchWithTimeout(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            }, 7000);
-        } catch (fetchErr) {
-            console.warn(`Gemini Vision primary model failed (${fetchErr.message}), trying fallback ${GEMINI_FALLBACK_MODEL}...`);
-            const fallbackUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_FALLBACK_MODEL}:generateContent?key=${gemini}`;
-            resp = await fetchWithTimeout(fallbackUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            }, 5500);
+        const models = getCandidateModels();
+        let lastStatus = 0;
+
+        for (const model of models) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${gemini}`;
+            try {
+                const resp = await fetchWithTimeout(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }, 7500);
+
+                if (resp.ok) {
+                    cachedWorkingModel = model;
+                    const data = await resp.json();
+                    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                    try {
+                        return JSON.parse(rawText.trim());
+                    } catch {
+                        return { context: rawText, actions: [] };
+                    }
+                }
+
+                lastStatus = resp.status;
+                if (resp.status === 401 || resp.status === 403) {
+                    throw new Error(`GEMINI_AUTH_ERROR_${resp.status}`);
+                }
+
+                console.warn(`Gemini Vision model ${model} returned ${resp.status}, trying next fallback...`);
+            } catch (err) {
+                if (err.message && err.message.startsWith('GEMINI_AUTH_ERROR')) {
+                    throw err;
+                }
+                console.warn(`Gemini Vision model ${model} failed (${err.message}), trying next fallback...`);
+            }
         }
 
-        if (!resp.ok && resp.status !== 400 && resp.status !== 401 && resp.status !== 403) {
-            console.warn(`Gemini Vision primary returned ${resp.status}, trying fallback ${GEMINI_FALLBACK_MODEL}...`);
-            const fallbackUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_FALLBACK_MODEL}:generateContent?key=${gemini}`;
-            resp = await fetchWithTimeout(fallbackUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            }, 5500);
-        }
-
-        if (!resp.ok) throw new Error(`GEMINI_VISION_ERROR_${resp.status}`);
-        const data = await resp.json();
-        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-        try {
-            return JSON.parse(rawText.trim());
-        } catch {
-            return {
-                context: rawText,
-                actions: []
-            };
-        }
+        throw new Error(`GEMINI_VISION_ERROR_${lastStatus || 404}`);
     }
 
     async function suggestTasksFromActivity(history = [], completedToday = [], pendingTasks = []) {
@@ -531,12 +541,11 @@ Return JSON with this schema:
         // Check if Gemini API key is configured
         const { gemini } = getKeys();
         if (gemini) {
-            try {
-                const completedStr = completedToday.map(t => `- "${t.taskName || t.name}" (${t.plannedDuration || t.duration || 15}m, ${t.category || 'work'})`).join('\n');
-                const pendingStr = pendingTasks.slice(0, 5).map(t => `- "${t.name}" (${t.duration}m)`).join('\n');
-                const recentHistoryStr = history.slice(0, 8).map(t => `- "${t.taskName}" (${t.category})`).join('\n');
+            const completedStr = completedToday.map(t => `- "${t.taskName || t.name}" (${t.plannedDuration || t.duration || 15}m, ${t.category || 'work'})`).join('\n');
+            const pendingStr = pendingTasks.slice(0, 5).map(t => `- "${t.name}" (${t.duration}m)`).join('\n');
+            const recentHistoryStr = history.slice(0, 8).map(t => `- "${t.taskName}" (${t.category})`).join('\n');
 
-                const promptText = `You are a clinical ADHD executive dysfunction productivity coach.
+            const promptText = `You are a clinical ADHD executive dysfunction productivity coach.
 Current local time: ${timeStr} (${timeOfDay}).
 Tasks completed today (${completedToday.length}):
 ${completedStr || 'None logged yet today.'}
@@ -554,53 +563,58 @@ Rules:
 - Categorize as work, health, personal, learning, or chores.
 Return JSON matching schema.`;
 
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_PRIMARY_MODEL}:generateContent?key=${gemini}`;
-                const payload = {
-                    contents: [{ parts: [{ text: promptText }] }],
-                    generationConfig: {
-                        response_mime_type: 'application/json',
-                        response_schema: {
-                            type: 'OBJECT',
-                            properties: {
-                                context: { type: 'STRING' },
-                                suggestions: {
-                                    type: 'ARRAY',
-                                    items: {
-                                        type: 'OBJECT',
-                                        properties: {
-                                            title: { type: 'STRING' },
-                                            reason: { type: 'STRING' },
-                                            duration: { type: 'INTEGER' },
-                                            category: { type: 'STRING' }
-                                        },
-                                        required: ['title', 'reason', 'duration', 'category']
-                                    }
+            const payload = {
+                contents: [{ parts: [{ text: promptText }] }],
+                generationConfig: {
+                    response_mime_type: 'application/json',
+                    response_schema: {
+                        type: 'OBJECT',
+                        properties: {
+                            context: { type: 'STRING' },
+                            suggestions: {
+                                type: 'ARRAY',
+                                items: {
+                                    type: 'OBJECT',
+                                    properties: {
+                                        title: { type: 'STRING' },
+                                        reason: { type: 'STRING' },
+                                        duration: { type: 'INTEGER' },
+                                        category: { type: 'STRING' }
+                                    },
+                                    required: ['title', 'reason', 'duration', 'category']
                                 }
-                            },
-                            required: ['context', 'suggestions']
+                            }
                         },
-                        temperature: 0.3
-                    }
-                };
+                        required: ['context', 'suggestions']
+                    },
+                    temperature: 0.3
+                }
+            };
 
-                const resp = await fetchWithTimeout(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                }, 3500);
+            const models = getCandidateModels();
+            for (const model of models) {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${gemini}`;
+                try {
+                    const resp = await fetchWithTimeout(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    }, 4000);
 
-                if (resp.ok) {
-                    const data = await resp.json();
-                    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                    if (rawText) {
-                        const parsed = JSON.parse(rawText.trim());
-                        if (parsed && Array.isArray(parsed.suggestions) && parsed.suggestions.length > 0) {
-                            return parsed;
+                    if (resp.ok) {
+                        cachedWorkingModel = model;
+                        const data = await resp.json();
+                        const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (rawText) {
+                            const parsed = JSON.parse(rawText.trim());
+                            if (parsed && Array.isArray(parsed.suggestions) && parsed.suggestions.length > 0) {
+                                return parsed;
+                            }
                         }
                     }
+                } catch (err) {
+                    console.warn(`Activity suggestions on ${model} failed, trying next...`);
                 }
-            } catch (err) {
-                console.warn('AI activity suggestion timed out or failed, using local heuristics:', err.message);
             }
         }
 
@@ -611,65 +625,69 @@ Return JSON matching schema.`;
     async function generateStuckRescue(taskName) {
         const { gemini } = getKeys();
         if (gemini) {
-            try {
-                const prompt = `You are a clinical ADHD paralysis rescue specialist.
+            const prompt = `You are a clinical ADHD paralysis rescue specialist.
 The user is frozen/stuck on this task: "${taskName}".
 Generate exactly 2 concrete, low-friction physical micro-moves to shatter executive paralysis:
 1. "starter": a 30-sec to 2-min physical movement (e.g. "Crack the door open", "Put 2 dishes in sink", "Open file and type 1 comment").
 2. "good_enough": a 2-5 min stopping line to escape the perfectionist trap (e.g. "Write down 3 bullet notes and close tab", "Send current draft as-is").
 Return JSON matching schema.`;
 
-                const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_PRIMARY_MODEL}:generateContent?key=${gemini}`;
-                const payload = {
-                    contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: {
-                        response_mime_type: 'application/json',
-                        response_schema: {
-                            type: 'OBJECT',
-                            properties: {
-                                starter: {
-                                    type: 'OBJECT',
-                                    properties: {
-                                        title: { type: 'STRING' },
-                                        detail: { type: 'STRING' },
-                                        duration: { type: 'INTEGER' }
-                                    },
-                                    required: ['title', 'duration']
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: {
+                    response_mime_type: 'application/json',
+                    response_schema: {
+                        type: 'OBJECT',
+                        properties: {
+                            starter: {
+                                type: 'OBJECT',
+                                properties: {
+                                    title: { type: 'STRING' },
+                                    detail: { type: 'STRING' },
+                                    duration: { type: 'INTEGER' }
                                 },
-                                good_enough: {
-                                    type: 'OBJECT',
-                                    properties: {
-                                        title: { type: 'STRING' },
-                                        detail: { type: 'STRING' },
-                                        duration: { type: 'INTEGER' }
-                                    },
-                                    required: ['title', 'duration']
-                                }
+                                required: ['title', 'duration']
                             },
-                            required: ['starter', 'good_enough']
+                            good_enough: {
+                                type: 'OBJECT',
+                                properties: {
+                                    title: { type: 'STRING' },
+                                    detail: { type: 'STRING' },
+                                    duration: { type: 'INTEGER' }
+                                },
+                                required: ['title', 'duration']
+                            }
                         },
-                        temperature: 0.3
-                    }
-                };
+                        required: ['starter', 'good_enough']
+                    },
+                    temperature: 0.3
+                }
+            };
 
-                const resp = await fetchWithTimeout(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                }, 3000);
+            const models = getCandidateModels();
+            for (const model of models) {
+                const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${gemini}`;
+                try {
+                    const resp = await fetchWithTimeout(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    }, 3500);
 
-                if (resp.ok) {
-                    const data = await resp.json();
-                    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-                    if (text) {
-                        const parsed = JSON.parse(text.trim());
-                        if (parsed && parsed.starter && parsed.good_enough) {
-                            return parsed;
+                    if (resp.ok) {
+                        cachedWorkingModel = model;
+                        const data = await resp.json();
+                        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (text) {
+                            const parsed = JSON.parse(text.trim());
+                            if (parsed && parsed.starter && parsed.good_enough) {
+                                return parsed;
+                            }
                         }
                     }
+                } catch (err) {
+                    console.warn(`Stuck rescue on ${model} failed, trying next...`);
                 }
-            } catch (err) {
-                console.warn('AI stuck rescue timed out or failed, using local heuristics:', err.message);
             }
         }
 

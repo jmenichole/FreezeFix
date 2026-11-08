@@ -1564,13 +1564,22 @@ document.addEventListener('DOMContentLoaded', () => {
                             const btnClose = document.getElementById('btn-close-vision');
                             if (btnClose) btnClose.onclick = () => elAiResponse.classList.add('hidden');
                         } else {
+                            let userFriendlyMsg = escapeHtml(err.message || 'Error communicating with AI service');
+                            if (err.message && (err.message.includes('AUTH') || err.message.includes('401') || err.message.includes('403'))) {
+                                userFriendlyMsg = 'Your Gemini API key appears invalid or expired. Please check your key in ⚙️ Settings.';
+                            } else if (err.message && err.message.includes('TIMEOUT')) {
+                                userFriendlyMsg = 'Webpage scan timed out. Please click "📸 Scan Webpage" to try again!';
+                            } else if (err.message && err.message.includes('404')) {
+                                userFriendlyMsg = 'Gemini Vision model returned 404. Models have been automatically updated to gemini-3.5-flash-lite / gemini-3.8-flash.';
+                            }
+
                             elAiResponse.innerHTML = `
                                 <div class="vision-notice-card">
                                     <div class="vision-notice-header">
-                                        <span class="vision-notice-badge" style="color:#ef4444; border-color:rgba(239,68,68,0.3); background:rgba(239,68,68,0.1)">⚠️ AI Analysis Note</span>
+                                        <span class="vision-notice-badge" style="color:#ef4444; border-color:rgba(239,68,68,0.3); background:rgba(239,68,68,0.1)">⚠️ Tab Scan Note</span>
                                         <button id="btn-close-vision" class="icon-close-sm" title="Dismiss">✕</button>
                                     </div>
-                                    <p class="vision-notice-text">${escapeHtml(err.message || 'Error communicating with AI service')}</p>
+                                    <p class="vision-notice-text">${userFriendlyMsg}</p>
                                 </div>
                             `;
                             const btnClose = document.getElementById('btn-close-vision');
