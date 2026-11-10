@@ -13,7 +13,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://localhost:8999 https://api.groq.com https://generativelanguage.googleapis.com">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ADHD Flow Widget</title>
+    <title>FreezeFix</title>
     <meta name="description" content="Your always-visible ADHD productivity widget with smart time-blocking, task breakdown, and AI suggestions.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -44,12 +44,9 @@
         </div>
         <div class="tab-pill-group" role="tablist" aria-label="Views">
             <button id="tab-btn-focus" class="tab-pill active" data-view="focus">🎯 Focus</button>
-            <button id="tab-btn-timeline" class="tab-pill" data-view="timeline">📅 Day Flow</button>
             <button id="tab-btn-tasks" class="tab-pill" data-view="tasks">📋 Tasks</button>
         </div>
         <div class="top-tools">
-            <button id="btn-header-history" class="tool-btn" title="Activity History">📊</button>
-            <button id="btn-header-changelog" class="tool-btn" title="What's New / Change Log">🚀</button>
             <button id="btn-header-help" class="tool-btn" title="Help & Guide">❓</button>
             <button id="btn-header-settings" class="tool-btn" title="Settings">⚙️</button>
             <a href="https://ko-fi.com/jmenichole7" target="_blank" class="tool-btn kofi-btn" title="Support on Ko-fi">☕</a>
@@ -61,50 +58,25 @@
     ──────────────────────────────────────────────────── -->
     <section id="view-focus" class="app-view active-view">
         
-        <!-- ⚡ BRAIN DUMP: Sticky Instant Capture -->
-        <div id="brain-dump-section" class="brain-dump-card">
-            <div class="dump-header">
-                <span class="dump-label">⚡ BRAIN DUMP</span>
-                <span class="dump-sub">Clear your mind & unfreeze</span>
+        <!-- 🧊 UNFREEZE: wall of text → one clear step at a time -->
+        <div id="unfreeze-card" class="unfreeze-card">
+            <div id="unfreeze-input-wrap" class="unfreeze-input-wrap">
+                <label for="unfreeze-input" class="unfreeze-label">Paste or highlight something overwhelming</label>
+                <p id="unfreeze-hint" class="unfreeze-hint">A long AI answer, an email, instructions. Get one clear step at a time.</p>
+                <textarea id="unfreeze-input" rows="4" placeholder="Paste the wall of text here… or highlight text on any page, right-click → Unfreeze this" aria-describedby="unfreeze-hint"></textarea>
+                <div class="unfreeze-btn-row">
+                    <button id="btn-unfreeze-go" class="btn btn-primary unfreeze-go" title="Turn it into steps (Ctrl/⌘ + Enter)">🧊 Unfreeze this</button>
+                    <button id="btn-scan-screen" class="btn btn-ghost unfreeze-scan" title="Read the text on this page (or your highlighted text)">📄 Scan this page</button>
+                </div>
             </div>
-            <div class="dump-input-row">
-                <input id="brain-dump-input" type="text" placeholder="Type 1 thought or task, press Enter..." autocomplete="off">
-                <button id="btn-brain-add" class="btn btn-primary btn-sm" title="Add to focus queue">Add</button>
-            </div>
-            <div id="brain-scaffold-container" class="brain-scaffold-container hidden"></div>
+            <div id="unfreeze-result" class="unfreeze-result hidden" aria-live="polite"></div>
         </div>
-
-        <!-- 🔥 Gamified Dopamine & Streak Flow Banner -->
-        <div id="focus-streak-banner" class="focus-dopamine-banner">
-            <div class="dopamine-stat" title="Daily streak of completed tasks">
-                <span class="dopamine-icon">🔥</span>
-                <div class="dopamine-info">
-                    <span id="focus-streak-count" class="dopamine-num">0</span>
-                    <span class="dopamine-label">Streak</span>
-                </div>
-            </div>
-            <div class="dopamine-divider"></div>
-            <div class="dopamine-stat" title="Tasks completed today">
-                <span class="dopamine-icon">⚡</span>
-                <div class="dopamine-info">
-                    <span id="focus-done-count" class="dopamine-num">0</span>
-                    <span class="dopamine-label">Done Today</span>
-                </div>
-            </div>
-            <div class="dopamine-divider"></div>
-            <div class="dopamine-stat" title="Remaining focus queue">
-                <span class="dopamine-icon">🎯</span>
-                <div class="dopamine-info">
-                    <span id="focus-left-count" class="dopamine-num">0</span>
-                    <span class="dopamine-label">Queued</span>
-                </div>
-            </div>
-        </div>
+        <div id="ai-response" class="ai-bubble hidden"></div>
 
         <!-- 🎯 NOW Card -->
         <div id="next-task-card" class="now-focus-card">
             <div class="now-badge-row">
-                <span class="now-badge">🎯 NOW (Just this step)</span>
+                <span class="now-badge">🎯 Up next</span>
                 <span id="next-task-meta" class="now-meta"></span>
             </div>
             <div id="next-task-name" class="now-task-title">Nothing queued — type a thought above!</div>
@@ -166,23 +138,75 @@
             <div id="stuck-rescue-panel" class="stuck-rescue-panel hidden"></div>
         </div>
 
-        <!-- ⏭️ NEXT UP Card (Softens transition anxiety per Flynn OT guide) -->
-        <div id="upcoming-task-card" class="next-peek-card">
-            <div class="next-peek-header">
-                <span class="next-peek-label">⏭️ NEXT IN LINE:</span>
-                <span id="upcoming-task-meta" class="next-peek-meta"></span>
+        <!-- ⚡ BRAIN DUMP: Sticky Instant Capture -->
+        <div id="brain-dump-section" class="brain-dump-card">
+            <div class="dump-header">
+                <span class="dump-label">⚡ BRAIN DUMP</span>
+                <span class="dump-sub">Clear your mind & unfreeze</span>
             </div>
-            <div id="upcoming-task-name" class="next-peek-title">No upcoming tasks — enjoy your break! ☕</div>
+            <div class="dump-input-row">
+                <input id="brain-dump-input" type="text" placeholder="Type 1 thought or task, press Enter..." autocomplete="off">
+                <button id="btn-brain-add" class="btn btn-primary btn-sm" title="Add to focus queue">Add</button>
+            </div>
+            <div id="brain-scaffold-container" class="brain-scaffold-container hidden"></div>
         </div>
 
-        <!-- AI Assistant (On-Demand & Compact) -->
-        <div id="whats-next-section" class="ai-compact-section">
-            <div class="ai-button-row">
-                <button id="btn-whats-next" class="btn btn-ai btn-sm" style="flex:1">🤖 What next?</button>
-                <button id="btn-scan-screen" class="btn btn-glow btn-sm" style="flex:1">📸 Scan Webpage</button>
+        <!-- ➕ MORE: everything else, tucked away (nothing deleted) -->
+        <details id="more-section" class="more-section">
+            <summary class="more-summary">More <span class="more-sub">streaks, Day Flow, calendar, extras</span></summary>
+            <div class="more-body">
+            <!-- 🔥 Gamified Dopamine & Streak Flow Banner -->
+            <div id="focus-streak-banner" class="focus-dopamine-banner">
+                <div class="dopamine-stat" title="Daily streak of completed tasks">
+                    <span class="dopamine-icon">🔥</span>
+                    <div class="dopamine-info">
+                        <span id="focus-streak-count" class="dopamine-num">0</span>
+                        <span class="dopamine-label">Streak</span>
+                    </div>
+                </div>
+                <div class="dopamine-divider"></div>
+                <div class="dopamine-stat" title="Tasks completed today">
+                    <span class="dopamine-icon">⚡</span>
+                    <div class="dopamine-info">
+                        <span id="focus-done-count" class="dopamine-num">0</span>
+                        <span class="dopamine-label">Done Today</span>
+                    </div>
+                </div>
+                <div class="dopamine-divider"></div>
+                <div class="dopamine-stat" title="Remaining focus queue">
+                    <span class="dopamine-icon">🎯</span>
+                    <div class="dopamine-info">
+                        <span id="focus-left-count" class="dopamine-num">0</span>
+                        <span class="dopamine-label">Queued</span>
+                    </div>
+                </div>
             </div>
-            <div id="ai-response" class="ai-bubble hidden"></div>
-        </div>
+
+            <!-- ⏭️ NEXT UP Card (Softens transition anxiety per Flynn OT guide) -->
+            <div id="upcoming-task-card" class="next-peek-card">
+                <div class="next-peek-header">
+                    <span class="next-peek-label">⏭️ NEXT IN LINE:</span>
+                    <span id="upcoming-task-meta" class="next-peek-meta"></span>
+                </div>
+                <div id="upcoming-task-name" class="next-peek-title">No upcoming tasks — enjoy your break! ☕</div>
+            </div>
+
+            <!-- AI Assistant (On-Demand & Compact) -->
+            <div id="whats-next-section" class="ai-compact-section">
+                <div class="ai-button-row">
+                    <button id="btn-whats-next" class="btn btn-ai btn-sm" style="flex:1">🤖 What next?</button>
+                </div>
+            </div>
+
+
+                <div class="more-links" role="group" aria-label="More tools">
+                    <button id="btn-more-dayflow" class="btn btn-ghost btn-sm" title="Timeline, auto-schedule and reschedule">📅 Day Flow &amp; auto-schedule</button>
+                    <button id="btn-import-cal" class="btn btn-ghost btn-sm" title="Import a calendar .ics file">📆 Import calendar (.ics)</button>
+                    <button id="btn-header-history" class="btn btn-ghost btn-sm" title="Activity History">📊 History</button>
+                    <button id="btn-header-changelog" class="btn btn-ghost btn-sm" title="What's New / Change Log">🚀 What's new</button>
+                </div>
+            </div>
+        </details>
 
         <!-- Hidden elements retained for event binding integrity -->
         <div id="clock-section" style="display:none">
@@ -204,6 +228,7 @@
          VIEW 2: 📅 DAY FLOW (Visual Timeline & Reschedule)
     ──────────────────────────────────────────────────── -->
     <section id="view-timeline" class="app-view">
+        <button id="btn-timeline-back" class="btn btn-ghost btn-xs timeline-back" title="Back to Focus">← Back to Focus</button>
         <aside id="panel-left" class="panel">
             <div class="panel-header">
                 <div>
@@ -591,6 +616,10 @@
             <button class="modal-close" data-close="modal-help" aria-label="Close">✕</button>
         </div>
         <div style="padding:10px 14px;color:var(--t2);font-size:13px;display:flex;flex-direction:column;gap:10px">
+            <div style="background:rgba(6,182,212,0.10);border:1px solid rgba(103,232,249,0.35);border-radius:10px;padding:10px 12px">
+                <div style="font-weight:600;color:var(--t1);margin-bottom:2px">🧊 Unfreeze this</div>
+                <div style="font-size:12px;color:var(--t2)">Highlight text on any page, right-click → <strong>Unfreeze this</strong>. Or paste it in the box, or press <strong>Scan this page</strong>. You get a one-line gist and one step at a time: <strong>Done ✓</strong>, <strong>Too big</strong>, <strong>Skip</strong>. Shortcuts on a step: D, B, S.</div>
+            </div>
             <div style="background:var(--glass);border:1px solid var(--glass-b);border-radius:10px;padding:10px 12px">
                 <div style="font-weight:600;color:var(--t1);margin-bottom:2px">⚡ 1. Brain Dump</div>
                 <div style="font-size:12px;color:var(--t2)">Type any stray thought and press Enter. Gets it out of your head without breaking flow.</div>
@@ -600,8 +629,8 @@
                 <div style="font-size:12px;color:var(--t2)">Stuck on a big task? Click <strong>Break Down</strong> to instantly split it into 2-minute starter steps.</div>
             </div>
             <div style="background:var(--glass);border:1px solid var(--glass-b);border-radius:10px;padding:10px 12px">
-                <div style="font-weight:600;color:var(--t1);margin-bottom:2px">📸 3. Scan Webpage</div>
-                <div style="font-size:12px;color:var(--t2)">Lost in tabs? Click <strong>Scan Webpage</strong> to see your immediate next step on that page.</div>
+                <div style="font-weight:600;color:var(--t1);margin-bottom:2px">➕ 3. More</div>
+                <div style="font-size:12px;color:var(--t2)">Streaks, Day Flow timeline &amp; auto-schedule, calendar import, history and "What next?" are tucked under <strong>More</strong> at the bottom of the Focus view.</div>
             </div>
             <div style="background:var(--glass);border:1px solid var(--glass-b);border-radius:10px;padding:10px 12px">
                 <div style="font-weight:600;color:var(--t1);margin-bottom:2px">🆘 4. "Stuck?" Rescue</div>
@@ -628,8 +657,22 @@
         <div class="modal-body changelog-body">
             <div class="changelog-version-card">
                 <div class="version-header">
-                    <span class="version-badge current">v1.1.2</span>
+                    <span class="version-badge current">v1.3.0</span>
                     <span class="version-tag">Latest</span>
+                    <span class="version-date">November 10, 2026</span>
+                </div>
+                <ul class="changelog-list">
+                    <li><strong>Unfreeze this</strong>: highlight anything overwhelming, right-click, and get a one-line gist plus one clear step at a time.</li>
+                    <li><strong>Done ✓ / Too big / Skip</strong>: "Too big" splits just that step smaller, in place. Progress shows as dots.</li>
+                    <li><strong>Scan this page reads text</strong>: your selection or the page's main text. Screenshots only when a page has no text.</li>
+                    <li><strong>Calm home</strong>: extras moved into "More". Nothing removed.</li>
+                    <li><strong>Offline steps</strong> when no AI key is set.</li>
+                </ul>
+            </div>
+
+            <div class="changelog-version-card">
+                <div class="version-header">
+                    <span class="version-badge">v1.1.2</span>
                     <span class="version-date">November 8, 2026</span>
                 </div>
                 <ul class="changelog-list">
@@ -709,8 +752,10 @@
 <script src="js/history.js"></script>
 <script src="js/ics.js"></script>
 <script src="js/breakdown.js"></script>
+<script src="js/unfreeze-core.js"></script>
 <script src="js/ai.js"></script>
 <script src="js/app.js"></script>
+<script src="js/unfreeze.js"></script>
 <script src="js/heart-widget.js"></script>
 
 </body>

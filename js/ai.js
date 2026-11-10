@@ -73,11 +73,13 @@ const AIHelper = (() => {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${groq}`
             },
-            body: JSON.stringify({
+            body: JSON.stringify(Object.assign({
                 model: 'llama-3.3-70b-versatile',
-                messages: [{ role: 'user', content: prompt }],
-                temperature: options.temperature || 0.5
-            })
+                messages: options.systemInstruction
+                    ? [{ role: 'system', content: options.systemInstruction }, { role: 'user', content: prompt }]
+                    : [{ role: 'user', content: prompt }],
+                temperature: typeof options.temperature === 'number' ? options.temperature : 0.5
+            }, options.jsonMode ? { response_format: { type: 'json_object' } } : {}))
         }, timeoutMs);
 
         if (!resp.ok) throw new Error(`GROQ_ERROR_${resp.status}`);
@@ -710,8 +712,111 @@ Return JSON matching schema.`;
         return getLocalStuckRescue(taskName);
     }
 
+    // ── Unfreeze: wall of text → gist + 3-7 doable steps ─────────────
+    // Sends text ONLY to the user's own provider (Gemini first, then Groq), only on click.
+    async function unfreezeText(rawText) {
+        const text = UnfreezeCore.cleanInput(rawText);
+        if (!text) throw new Error('EMPTY_TEXT');
+        const { gemini, groq } = getKeys();
+        if (!gemini && !groq) throw new Error('NO_API_KEYS');
+
+        const opts = {
+            systemInstruction: UnfreezeCore.SYSTEM_PROMPT,
+            jsonSchema: UnfreezeCore.UNFREEZE_SCHEMA,
+            jsonMode: true,
+            temperature: 0.2,
+            timeoutMs: 15000
+        };
+        let lastErr = null;
+        // One attempt + one retry; JSON is validated & repaired each time.
+        for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+                const prompt = UnfreezeCore.buildUnfreezePrompt(text) +
+                    (attempt > 0 ? '\n\nReturn valid JSON only, exactly matching the shape described.' : '');
+                const raw = await callAI(prompt, opts);
+                const plan = UnfreezeCore.validateUnfreeze(raw);
+                if (plan) return plan;
+                lastErr = new Error('BAD_JSON');
+            } catch (err) {
+                lastErr = err;
+                if (err && /AUTH|401|403/.test(err.message || '')) break; // retrying won't fix a bad key
+            }
+        }
+        throw lastErr || new Error('UNFREEZE_FAILED');
+    }
+
+    async function splitStep(stepText, gist) {
+        const { gemini, groq } = getKeys();
+        if (!gemini && !groq) return UnfreezeCore.offlineSplit(stepText);
+        const opts = {
+            systemInstruction: UnfreezeCore.SPLIT_SYSTEM_PROMPT,
+            jsonSchema: UnfreezeCore.SPLIT_SCHEMA,
+            jsonMode: true,
+            temperature: 0.2,
+            timeoutMs: 10000
+        };
+        for (let attempt = 0; attempt < 2; attempt++) {
+            try {
+                const raw = await callAI(UnfreezeCore.buildSplitPrompt(stepText, gist), opts);
+                const steps = UnfreezeCore.validateSplit(raw);
+                if (steps) return steps;
+            } catch (err) {
+                console.warn('Split step failed:', err.message);
+                if (err && /AUTH|401|403/.test(err.message || '')) break;
+            }
+        }
+        return UnfreezeCore.offlineSplit(stepText);
+    }
+
+    // Fallback when a page has no readable text (images, PDF viewer): screenshot → same plan shape.
+    async function unfreezeImage(b64Image) {
+        const { gemini } = getKeys();
+        if (!gemini) throw new Error('NO_GEMINI_KEY');
+        const payload = {
+            system_instruction: { parts: [{ text: UnfreezeCore.SYSTEM_PROMPT }] },
+            contents: [{
+                parts: [
+                    { inlineData: { mimeType: 'image/jpeg', data: b64Image } },
+                    { text: 'This screenshot shows the overwhelming content. Read what is on it and turn it into the JSON plan.' }
+                ]
+            }],
+            generationConfig: {
+                response_mime_type: 'application/json',
+                response_schema: UnfreezeCore.UNFREEZE_SCHEMA,
+                temperature: 0.2
+            }
+        };
+        let lastStatus = 0;
+        for (const model of getCandidateModels()) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${gemini}`;
+            try {
+                const resp = await fetchWithTimeout(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                }, 15000);
+                if (resp.ok) {
+                    cachedWorkingModel = model;
+                    const data = await resp.json();
+                    const plan = UnfreezeCore.validateUnfreeze(data.candidates?.[0]?.content?.parts?.[0]?.text || '');
+                    if (plan) return plan;
+                    throw new Error('BAD_JSON');
+                }
+                lastStatus = resp.status;
+                if (resp.status === 401 || resp.status === 403) throw new Error(`GEMINI_AUTH_ERROR_${resp.status}`);
+            } catch (err) {
+                if (err.message && (err.message.startsWith('GEMINI_AUTH_ERROR') || err.message === 'BAD_JSON')) throw err;
+                console.warn(`Unfreeze vision on ${model} failed (${err.message}), trying next...`);
+            }
+        }
+        throw new Error(`GEMINI_VISION_ERROR_${lastStatus || 404}`);
+    }
+
     return {
         getKeys,
+        unfreezeText,
+        splitStep,
+        unfreezeImage,
         generateTaskBreakdown,
         suggestNextTask,
         analyzeScreenImage,

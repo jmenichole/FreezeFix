@@ -11,7 +11,7 @@ manifest_file = os.path.join(ROOT_DIR, "manifest.json")
 with open(manifest_file, "r", encoding="utf-8") as f:
     manifest_data = json.load(f)
 
-version = manifest_data.get("version", "1.1.1")
+version = manifest_data.get("version", "1.3.0")
 OUTPUT_ZIP = os.path.join(DIST_DIR, f"FreezeFix-v{version}-ChromeExtension.zip")
 LEGACY_ZIP = os.path.join(DIST_DIR, "FreezeFix-v1.1.0-ChromeExtension.zip")
 UNPACKED_DIR = os.path.join(DIST_DIR, "FreezeFix-ChromeExtension-Unpacked")
@@ -77,6 +77,8 @@ with zipfile.ZipFile(OUTPUT_ZIP, "r") as z:
     assert "background.js" in names, "background.js missing!"
     assert "index.html" in names, "index.html missing!"
     assert "icons/icon128.png" in names, "icon128.png missing!"
+    for required in ("js/unfreeze-core.js", "js/unfreeze.js", "js/ai.js", "js/app.js"):
+        assert required in names, f"{required} missing!"
     
     with z.open("manifest.json") as mf:
         m_check = json.load(mf)
@@ -84,6 +86,9 @@ with zipfile.ZipFile(OUTPUT_ZIP, "r") as z:
         assert "storage" not in perms, "storage permission still present!"
         assert "sidePanel" in perms, "sidePanel permission missing!"
         assert "activeTab" in perms, "activeTab permission missing!"
+        assert "contextMenus" in perms, "contextMenus permission missing!"
+        assert "scripting" in perms, "scripting permission missing!"
+        assert len(m_check.get("description", "")) <= 132, "manifest description over 132 chars!"
         print(f"Verified manifest permissions: {perms}")
 
 print("All CWS compliance and minimal-permissions checks PASSED cleanly!")

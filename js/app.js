@@ -1033,7 +1033,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (elActContent && !elActContent.classList.contains('hidden')) {
                 elActContent.classList.add('hidden');
             }
-            [elModalTask, elModalSettings, elModalHistory, elModalBreakdown, elModalChangelog].forEach(m => {
+            [elModalTask, elModalSettings, elModalHistory, elModalBreakdown, elModalChangelog, document.getElementById('modal-help')].forEach(m => {
                 if (m && !m.classList.contains('hidden')) {
                     m.classList.add('hidden');
                 }
@@ -1421,9 +1421,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    const elBtnScanScreen = document.getElementById('btn-scan-screen');
+    // v1.3.0: the "Scan this page" button now reads page TEXT (see js/unfreeze.js).
+    // The original screenshot-vision scan is kept here as a callable legacy path.
+    const elBtnScanScreen = true;
     if (elBtnScanScreen) {
-        elBtnScanScreen.onclick = async () => {
+        window.FreezeFixLegacyVisionScan = async () => {
             elAiResponse.classList.remove('hidden');
             elAiResponse.innerHTML = `
                 <div class="vision-loading">
@@ -2070,6 +2072,14 @@ document.addEventListener('DOMContentLoaded', () => {
             else app.classList.add('frost-none');
         } catch (e) { /* ignore */ }
         
+        // Apply theme (auto follows the OS via prefers-color-scheme) & legible font
+        try {
+            const mode = s.themeMode || 'auto';
+            if (mode === 'light' || mode === 'dark') document.documentElement.setAttribute('data-theme', mode);
+            else document.documentElement.removeAttribute('data-theme');
+            document.body.classList.toggle('font-legible', !!s.fontLegible);
+        } catch (e) { /* ignore */ }
+
         // Apply Section Visibility
         const sections = {
             'sf-sec-clock': 'clock-section',
@@ -2168,6 +2178,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (elOpacity) elOpacity.value = s.widgetOpacity || '0.96';
             const elFrost = document.getElementById('sf-frost-style');
             if (elFrost) elFrost.value = s.frostStyle || 'soft';
+            const elTheme = document.getElementById('sf-theme-mode');
+            if (elTheme) elTheme.value = s.themeMode || 'auto';
+            const elFontLegible = document.getElementById('sf-font-legible');
+            if (elFontLegible) elFontLegible.checked = !!s.fontLegible;
 
             ['sf-sec-clock', 'sf-sec-next', 'sf-sec-timer', 'sf-sec-dump', 'sf-sec-ai', 'sf-sec-timeline', 'sf-sec-tasks'].forEach(id => {
                 const input = document.getElementById(id);
@@ -2190,7 +2204,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
     document.getElementById('btn-save-settings').onclick = () => {
-        const s = {
+        const s = Object.assign(loadSettings(), {
             geminiKey: document.getElementById('sf-gemini-key').value.trim(),
             groqKey: document.getElementById('sf-groq-key').value.trim(),
             gcalUrl: document.getElementById('sf-gcal-url').value.trim(),
@@ -2201,8 +2215,10 @@ document.addEventListener('DOMContentLoaded', () => {
             widgetWidth: document.getElementById('sf-widget-width').value,
             uiScale: document.getElementById('sf-ui-scale') ? document.getElementById('sf-ui-scale').value : '1',
             widgetOpacity: document.getElementById('sf-widget-opacity') ? document.getElementById('sf-widget-opacity').value : '0.96',
-            frostStyle: document.getElementById('sf-frost-style') ? document.getElementById('sf-frost-style').value : 'soft'
-        };
+            frostStyle: document.getElementById('sf-frost-style') ? document.getElementById('sf-frost-style').value : 'soft',
+            themeMode: document.getElementById('sf-theme-mode') ? document.getElementById('sf-theme-mode').value : 'auto',
+            fontLegible: document.getElementById('sf-font-legible') ? document.getElementById('sf-font-legible').checked : false
+        });
 
         ['sf-sec-clock', 'sf-sec-next', 'sf-sec-timer', 'sf-sec-dump', 'sf-sec-ai', 'sf-sec-timeline', 'sf-sec-tasks'].forEach(id => {
             const input = document.getElementById(id);
@@ -2302,16 +2318,23 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.addEventListener('click', () => setView(btn.dataset.view));
         });
 
-        const savedView = localStorage.getItem('freezefix_active_view') || 'focus';
-        setView(savedView);
+        // v1.3.0: always open on the calm Focus view (Unfreeze box + Up Next + timer + brain dump)
+        setView('focus');
+        return setView;
     }
-    initViewTabs();
+    const setView = initViewTabs();
+    const btnMoreDayflow = document.getElementById('btn-more-dayflow');
+    if (btnMoreDayflow) btnMoreDayflow.onclick = () => setView('timeline');
+    const btnTimelineBack = document.getElementById('btn-timeline-back');
+    if (btnTimelineBack) btnTimelineBack.onclick = () => setView('focus');
 
     // ── Header Quick Tools ──
     const btnHeaderSettings = document.getElementById('btn-header-settings');
     if (btnHeaderSettings) {
         btnHeaderSettings.onclick = () => {
-            if (elModalSettings) {
+            if (elBtnSettings && elBtnSettings.onclick) {
+                elBtnSettings.onclick();
+            } else if (elModalSettings) {
                 renderIntegrationList();
                 elModalSettings.classList.remove('hidden');
             }
@@ -2328,6 +2351,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
+    const elModalHelp = document.getElementById('modal-help');
     const btnHeaderHelp = document.getElementById('btn-header-help');
     if (btnHeaderHelp) {
         btnHeaderHelp.onclick = () => {
@@ -2350,6 +2374,20 @@ document.addEventListener('DOMContentLoaded', () => {
             if (elModalChangelog) elModalChangelog.classList.remove('hidden');
         };
     }
+
+    // ── Shared hooks for js/unfreeze.js ──
+    window.FreezeFixApp = {
+        renderAll,
+        showToast,
+        playDopamineChime,
+        setView,
+        startTimerFor(mins) { setTimerMinutes(mins); startTimer(); },
+        openSettings() {
+            if (btnHeaderSettings && btnHeaderSettings.onclick) btnHeaderSettings.onclick();
+            const keyInput = document.getElementById('sf-groq-key');
+            if (keyInput) setTimeout(() => keyInput.focus(), 50);
+        }
+    };
 
     // ── Quick Duration Chips in Add Task Modal ──
     const durationChips = document.querySelectorAll('.duration-preset');
