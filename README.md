@@ -2,7 +2,7 @@
 
 [![Support on Ko-fi](https://img.shields.io/badge/Ko--fi-Support%20me-794bc4?style=for-the-badge&logo=ko-fi&logoColor=white)](https://ko-fi.com/jmenichole7)
 
-FreezeFix (formerly ADHD Flow Widget) is an always-visible desktop widget that helps users with ADHD get into flow: micro-task breakdowns, auto-scheduling, AI suggestions, streaks, and a lightweight background tracker.
+FreezeFix is a Chrome Side Panel & desktop companion engineered to crush ADHD paralysis: instant 2-minute micro-task breakdowns, visual focus timers, and on-page webpage guidance without planner fatigue.
 
 Repository: https://github.com/jmenichole/FreezeFix
 Gumroad product ID: jbbeps

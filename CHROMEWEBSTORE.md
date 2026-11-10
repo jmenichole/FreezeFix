@@ -13,43 +13,36 @@
 ## 1. Store Listing Copy
 
 ### Summary (Short Description — Max 132 characters)
-> ADHD productivity companion: micro-task breakdowns, auto-scheduling, AI suggestions, and focus streaks.
+> Crush ADHD freeze: 2-min task breakdowns, visual focus timer, and webpage copilot in your side panel.
 
-### Detailed Description (Formatted for Web Store)
+### Detailed Description (Formatted for Web Store — Scannable & Low Cognitive Load)
 ```text
-Overcome task paralysis, eliminate decision fatigue, and get into flow with FreezeFix — an executive function companion designed specifically for ADHD brains.
+Stuck in ADHD paralysis? FreezeFix lives right inside your Chrome Side Panel to help you start, unfreeze, and finish without the overwhelm.
 
-FreezeFix docks neatly on the right side of your browser as a Side Panel, keeping your tasks, timeline, and focus timer visible right alongside your work without cluttering your tabs.
+Zero complex setups. Zero planner fatigue. Just open the side panel and take the next tiny step.
 
-🌟 KEY FEATURES BUILT FOR ADHD MINDS:
+⚡ 4 WAYS FREEZEFIX UNFREEZES YOUR BRAIN:
 
-🪄 Magic Task Breakdown
-Staring at a big, intimidating project? Click the magic wand icon on any task to instantly break it down into tiny, low-pressure 5-minute micro-steps. Works with free Gemini/Groq AI or 100% offline using built-in rules!
+🧩 1. Magic Task Breakdown (0ms Instant)
+Big tasks feel impossible to start. Click "Break Down" on any task to instantly explode it into 3-4 physical, 2-minute micro-steps. Never stare blankly at a screen again.
 
-🎯 Focus "Up Next" Card
-Eliminate decision paralysis. FreezeFix highlights only ONE task at a time with a prominent "Start Focus" button so you always know exactly what to do next without second-guessing.
+📸 2. Webpage Copilot (Tab Scanner)
+Lost in a sea of tabs or stuck on a page? Click "Scan Webpage". FreezeFix reads your active tab and gives you 2-3 concrete next steps right on that screen. Zero preaching, zero scolding.
 
-⏱️ Ring Focus Timer with Preset Modes
-Easily switch between 25-minute Pomodoro focus, 5-minute quick breaks, 15-minute resets, or 90-minute deep work blocks. Visual progress ring keeps you grounded in time.
+🆘 3. "Stuck?" Emergency Guardrail
+Frozen on your current task? Hit "🆘 Stuck?" on your focus card to get an immediate 30-second physical starter move and a "good enough" finish line to break perfectionism.
 
-⚡ Brain Dump Quick-Add
-Got a random thought or urgent to-do while working? Type it into the Brain Dump field and hit Enter to get it out of your head immediately without breaking your concentration.
-
-📅 Visual Flow Timeline & Auto-Rescheduler
-View your day’s tasks mapped along a clean vertical timeline. Behind schedule? Click "Auto-Reschedule" to shift overdue tasks forward guilt-free.
-
-🎨 Adaptive Themes & High-Legibility Font
-• Seamlessly switches between Crisp Light Mode and Dark Neon Glass based on your browser theme.
-• Includes a one-click Atkinson Hyperlegible font toggle designed to reduce visual strain for dyslexia and ADHD.
-
-🔒 100% PRIVATE & OFFLINE-FIRST:
-• All your tasks, settings, and streak data remain strictly on your computer (localStorage).
-• Zero tracking, zero telemetry, and zero ads.
-• Works completely offline with smart heuristic rules.
+⏱️ 4. Visual Focus Timer & Day Flow
+A glowing focus ring keeps you grounded in time. View your day in a vertical timeline, or dump stray thoughts into the sticky Brain Dump without losing your place.
 
 ------------------------------------------------------------
-⌨️ KEYBOARD SHORTCUTS:
-• Toggle Side Panel: Alt + Shift + F (Windows) or Option + Shift + F (Mac)
+🔒 100% PRIVATE & OFFLINE-READY:
+• Runs 100% inside your browser sandbox.
+• Works completely offline with instant smart heuristics.
+• Zero ads, zero tracking, zero data collection.
+• Optional free Gemini / Groq key for background AI.
+
+⌨️ SHORTCUT: Press Alt + Shift + F (or Option + Shift + F on Mac) to toggle the side panel anytime.
 ```
 
 ---

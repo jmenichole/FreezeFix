@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-11-09
+
+### Enhanced (Low-Cognitive Load & Copy Overhaul)
+- **ADHD-Optimized Store Description**: Completely overhauled the Chrome Web Store listing copy and short summary in `CHROMEWEBSTORE.md` and `manifest.json`. Replaced dense walls of text with punchy, scannable, high-impact bullet points and micro-cards built for neurodivergent attention spans.
+- **In-App Help Modal Redesign**: Replaced the 5-paragraph wall-of-text Help modal with 4 visual, bite-sized mini-cards highlighting Brain Dump, Task Breakdown, Webpage Scanner, and Stuck Rescue with instant keyboard shortcut reference (`Alt + Shift + F`).
+
 ## [1.1.9] — 2026-11-08
 
 ### Fixed

@@ -590,17 +590,30 @@
             <h3 id="help-heading">❓ How to use FreezeFix</h3>
             <button class="modal-close" data-close="modal-help" aria-label="Close">✕</button>
         </div>
-        <div style="padding:10px 14px;line-height:1.5;color:var(--t2);font-size:13px">
-            <p><strong>Body-double</strong>: Mark a task for body-doubling when you want accountability or to pair with someone (a friend, coworker, or coach). It flags the task visually and can be used with external scheduling or reminders.</p>
-            <p><strong>Break it Down</strong>: Use the 🪄 button on any task (or from the Add/Edit task modal) to generate micro-steps. AI will try to create 3–6 tiny steps; if no AI key is configured, the app falls back to local heuristics.</p>
-            <p><strong>Energy & Action Plan</strong>: Set the Energy level to match how you feel now (High / Medium / Low). Use Action Plan to decide whether to Do, Delegate, or Delete a task quickly.</p>
-            <p><strong>Webpage Vision Scanner</strong>: Click <em>📸 Scan Webpage</em> to instantly analyze what you are currently viewing in your browser. FreezeFix uses Google Gemini Vision AI to read the page and recommend your next micro-step. 100% built-in with zero software or Python required!</p>
-            <p><strong>GitHub import</strong>: Removed from the UI to simplify the product. If you need GitHub imports later, they can be re-added as an explicit opt-in connector.</p>
-            <div style="margin-top:16px;text-align:center">
-                <button type="button" id="btn-open-changelog-from-help" class="btn btn-ghost btn-sm" style="border-color:#8b5cf6;color:#a78bfa">🚀 View Version Change Log & What's New</button>
+        <div style="padding:10px 14px;color:var(--t2);font-size:13px;display:flex;flex-direction:column;gap:10px">
+            <div style="background:var(--glass);border:1px solid var(--glass-b);border-radius:10px;padding:10px 12px">
+                <div style="font-weight:600;color:var(--t1);margin-bottom:2px">⚡ 1. Brain Dump</div>
+                <div style="font-size:12px;color:var(--t2)">Type any stray thought and press Enter. Gets it out of your head without breaking flow.</div>
             </div>
-            <hr style="opacity:.06;margin:12px 0">
-            <p style="font-size:12px;color:var(--t3)">Tip: Add quick tasks with Brain Dump, then use <em>Break it Down</em> to turn intimidating tasks into tiny steps you can complete in short bursts.</p>
+            <div style="background:var(--glass);border:1px solid var(--glass-b);border-radius:10px;padding:10px 12px">
+                <div style="font-weight:600;color:var(--t1);margin-bottom:2px">🧩 2. Break Down Tasks</div>
+                <div style="font-size:12px;color:var(--t2)">Stuck on a big task? Click <strong>Break Down</strong> to instantly split it into 2-minute starter steps.</div>
+            </div>
+            <div style="background:var(--glass);border:1px solid var(--glass-b);border-radius:10px;padding:10px 12px">
+                <div style="font-weight:600;color:var(--t1);margin-bottom:2px">📸 3. Scan Webpage</div>
+                <div style="font-size:12px;color:var(--t2)">Lost in tabs? Click <strong>Scan Webpage</strong> to see your immediate next step on that page.</div>
+            </div>
+            <div style="background:var(--glass);border:1px solid var(--glass-b);border-radius:10px;padding:10px 12px">
+                <div style="font-weight:600;color:var(--t1);margin-bottom:2px">🆘 4. "Stuck?" Rescue</div>
+                <div style="font-size:12px;color:var(--t2)">Paralyzed on a task? Tap <strong>🆘 Stuck?</strong> on your focus card for an instant 30-second starter move.</div>
+            </div>
+            <div style="background:rgba(139,92,246,0.12);border:1px solid rgba(139,92,246,0.25);border-radius:10px;padding:8px 12px;font-size:12px;color:var(--purple-l);display:flex;align-items:center;justify-content:space-between">
+                <span>⌨️ Toggle Side Panel:</span>
+                <kbd style="background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px;font-weight:600">Alt + Shift + F</kbd>
+            </div>
+            <div style="text-align:center;margin-top:6px">
+                <button type="button" id="btn-open-changelog-from-help" class="btn btn-ghost btn-sm" style="border-color:#8b5cf6;color:#a78bfa">🚀 What's New & Change Log</button>
+            </div>
         </div>
     </div>
 </div>
