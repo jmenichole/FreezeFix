@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] — 2026-11-10
+
+### Added — "Unfreeze this" (the core move)
+- **Right-click "Unfreeze this"** on any selected text (`contextMenus`): opens the side panel and hands it the selection (line breaks kept via `chrome.scripting`, falling back to `selectionText`). Held in the service worker's memory only until the panel picks it up.
+- **"Paste or highlight something overwhelming" box** at the top of the panel, with Ctrl/⌘+Enter to submit.
+- **Strict JSON Unfreeze prompt** (`js/unfreeze-core.js`, `AIHelper.unfreezeText`): `gist` (one sentence, "This is about…"), 3–7 verb-first `steps` with minute estimates and 5-word explanations for any jargon, optional `skip` line. Calm tone, no "you should". JSON is validated and repaired (code fences, smart quotes, trailing commas, alternate keys, preachy openers stripped); one retry, then a friendly error with "Try again" / "Use quick offline steps".
+- **One-step-at-a-time UI** (`js/unfreeze.js`): gist, then only the current step in large type, with **Done ✓**, **Too big** (`AIHelper.splitStep` splits just that step into 2–4 smaller ones, inserted in place), **Skip**, a "See all steps" toggle, progress as dots (no "3 of 7"), "⏱ start timer" for the step, and **Add to my tasks** for the steps left. Keyboard: buttons are native, focus moves to each new step, D/B/S shortcuts inside the card. Plan (not source text) persists locally so the panel reopens where you left off.
+- **Offline fallback** when no key is set: splits text into sentences/bullets, pulls imperative or instruction-like lines into up to 7 steps trimmed to ~12 words, and offers adding a free Groq/Gemini key.
+
+### Changed
+- **"Scan this page" reads text, not pixels**: selection if any, else the main readable text (`article`/`main`, with special handling for the latest Gemini / ChatGPT / Claude answer), trimmed to ~12k characters. Screenshot vision (`AIHelper.unfreezeImage`, Gemini) is only a fallback for pages without text (images, PDF viewer). The previous screenshot scan is kept as `window.FreezeFixLegacyVisionScan`.
+- **Decluttered panel**: opens on the Unfreeze box, Up next card (renamed from "NOW"), focus timer and brain dump. Streaks, next-in-line peek, "What next?", Day Flow (timeline, auto-schedule, reschedule), calendar import, history and "What's new" moved into a collapsible **More** section. Day Flow tab and header history/changelog icons moved there too. No features removed.
+- Panel always opens on the Focus view.
+- Groq calls now send the system instruction and request JSON mode when asked.
+- Permissions: added `contextMenus` and `scripting`. No new host permissions.
+- Manifest description, README (extension-first), store listing copy, privacy policy (`PRIVACY.md`, `docs/privacy.html`) updated. New store assets in `store-assets/`.
+
+### Fixed
+- Header ⚙️ Settings opened an empty form, so saving could wipe a saved API key; it now loads saved values, and saving merges with existing settings.
+- Header ❓ Help threw a ReferenceError (`elModalHelp` undefined); Escape now closes Help too.
+- Theme selector and Atkinson Hyperlegible toggle in Settings were not applied; both now save and apply.
+- Calendar `.ics` import had no button; it's back under More.
+- Elements with the `hidden` class (e.g. the AI bubble) now actually hide.
+
 ## [1.2.0] — 2026-11-09
 
 ### Enhanced (Low-Cognitive Load & Copy Overhaul)
